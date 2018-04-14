@@ -2,10 +2,7 @@
   "name": "hw-app-iota",
   "version": "0.1.0",
   "description": "Ledger Hardware Wallet IOTA Application API",
-  "main": "lib/IOTA.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "main": "./lib/IOTA.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/IOTA-Ledger/hw-app-iota.js.git"
@@ -21,7 +18,6 @@
   "license": "Apache-2.0",
   "homepage": "https://github.com/IOTA-Ledger/hw-app-iota.js",
   "dependencies": {
-    "@ledgerhq/hw-transport": "^4.7.3",
     "struct": "0.0.12"
   }
 }
