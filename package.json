@@ -1,6 +1,6 @@
 {
   "name": "hw-app-iota",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Ledger Hardware Wallet IOTA Application API",
   "main": "./lib/IOTA.js",
   "repository": {
