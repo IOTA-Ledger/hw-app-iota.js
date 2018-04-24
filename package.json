@@ -1,8 +1,12 @@
 {
   "name": "hw-app-iota",
   "version": "0.1.1",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "babel src -d lib"
+  },
   "description": "Ledger Hardware Wallet IOTA Application API",
-  "main": "./lib/IOTA.js",
+  "main": "lib/IOTA.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/IOTA-Ledger/hw-app-iota.js.git"
@@ -19,5 +23,10 @@
   "homepage": "https://github.com/IOTA-Ledger/hw-app-iota.js",
   "dependencies": {
     "struct": "0.0.12"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "rimraf": "^2.6.2"
   }
 }
