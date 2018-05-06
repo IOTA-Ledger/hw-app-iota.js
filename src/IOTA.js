@@ -392,7 +392,9 @@ export default class IOTA {
     // map internal addresses to their index
     var inputMapping = {};
     inputs.forEach(i => (inputMapping[i.address] = i.keyIndex));
-    inputMapping[remainder.address] = remainder.keyIndex;
+    if (remainder) {
+      inputMapping[remainder.address] = remainder.keyIndex;
+    }
 
     // sign the bundle on the ledger
     bundle = await this._signBundle({
