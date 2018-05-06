@@ -1,6 +1,13 @@
 import Struct from 'struct';
-import { addChecksum, noChecksum } from 'iota.lib.js/lib/utils/utils';
+import Bundle from 'iota.lib.js/lib/crypto/bundle/bundle';
+import {
+  addChecksum,
+  noChecksum,
+  transactionTrytes
+} from 'iota.lib.js/lib/utils/utils';
+import { isAddress, isTrytes } from 'iota.lib.js/lib/utils/inputValidator';
 
+const EMPTY_TAG = '9'.repeat(27);
 const Commands = {
   INS_SET_SEED: 0x01,
   INS_PUBKEY: 0x02,
@@ -8,6 +15,46 @@ const Commands = {
   INS_SIGN: 0x04,
   INS_DISP_ADDR: 0x05
 };
+
+function isTransfersArray(transfers) {
+  if (!(transfers instanceof Array)) {
+    return false;
+  }
+
+  for (var transfer of transfers) {
+    if (!isAddress(transfer.address)) {
+      return false;
+    }
+    if (!Number.isInteger(transfer.value) || transfer.value < 0) {
+      return false;
+    }
+    if (!isTrytes(transfer.tag, '0,27')) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isInputsArray(inputs) {
+  if (!(inputs instanceof Array)) {
+    return false;
+  }
+
+  for (var input of inputs) {
+    if (!isAddress(input.address)) {
+      return false;
+    }
+    if (!Number.isInteger(input.balance) || input.balance < 0) {
+      return false;
+    }
+    if (!Number.isInteger(input.keyIndex) || input.keyIndex < 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /**
  * IOTA API
@@ -19,9 +66,10 @@ const Commands = {
 export default class IOTA {
   constructor(transport) {
     this.transport = transport;
+    this.security = 0;
     transport.decorateAppAPIMethods(
       this,
-      ['setSeedInput', 'getAddress', 'signBundle'],
+      ['setSeedInput', 'getAddress', 'getSignedTransactions'],
       'IOT'
     );
   }
@@ -30,6 +78,10 @@ export default class IOTA {
     if (bip44Path.length !== 5) {
       throw new Error('setSeedInput: bip44Path must be a length of 5!');
     }
+    if (!Number.isInteger(security) || security < 1 || security > 3) {
+      throw new Error('Invalid security level provided');
+    }
+    this.security = security;
 
     var pathStruct = new Struct().word64Sle('path');
     var seedStruct = new Struct()
@@ -57,15 +109,18 @@ export default class IOTA {
   }
 
   /**
-   *   Generates anaddress index-based
+   * Generates anaddress index-based
    *
-   *   @method getAddress
-   *   @param {int} index                  Key index of the address
-   *   @param {object} options
-   *       @property   {bool} checksum     add 9-tryte checksum
-   *   @returns {string} address
+   * @method getAddress
+   * @param {int} index             key index of the address
+   * @param {object} options
+   *   @property {bool} checksum    add 9-tryte checksum
+   * @returns {promise<string>} address
    **/
   async getAddress(index, options = {}) {
+    if (!this.security) {
+      throw new Error('getAddress: setSeedInput not yet called');
+    }
     if (!Number.isInteger(index) || index < 0) {
       throw new Error('Invalid Index provided');
     }
@@ -79,22 +134,58 @@ export default class IOTA {
     return address;
   }
 
-  async signBundle(options) {
-    var { inputMapping, bundle, security } = options;
-    for (var tx of bundle.bundle) {
-      var index = inputMapping[tx.address] ? inputMapping[tx.address] : 0;
-      var result = await this.transaction(
-        tx.address,
-        index,
-        tx.value,
-        tx.obsoleteTag,
-        tx.currentIndex,
-        tx.lastIndex,
-        tx.timestamp
-      );
+  /**
+   * Returns an array of raw transaction data (trytes) including the signatures
+   *
+   * @param {{address: string, value: integer, tag: string}[]} transfers
+   * @param {{address: string, balance: integer, keyIndex: integer}[]} inputs
+   * @param {{address: string, keyIndex: integer}} remainder
+   * @returns {promise<string[]>}
+   */
+  async getSignedTransactions(transfers, inputs, remainder = {}) {
+    if (!this.security) {
+      throw new Error('getSignedTransactions: setSeedInput not yet called');
     }
-    await this.addSignatureFragmentsToBundle(bundle, security);
-    return bundle;
+    if (!isTransfersArray(transfers)) {
+      throw new Error('Invalid transfers array provided');
+    }
+    if (!isInputsArray(inputs)) {
+      throw new Error('Invalid transfers array provided');
+    }
+
+    // filter unnecessary inputs
+    inputs = inputs.filter(input => input.balance > 0);
+
+    if (inputs.length < 1) {
+      throw new Error('At least one input required');
+    }
+
+    if (transfers.length > 1 || inputs.length > 2) {
+      throw new Error('Unsupported number of transfers or inputs');
+    }
+
+    const balance = inputs.reduce((a, i) => a + i.balance, 0);
+    const payment = transfers.reduce((a, t) => a + t.value, 0);
+
+    if (remainder) {
+      if (
+        !isAddress(remainder.address) ||
+        !Number.isInteger(remainder.keyIndex) ||
+        remainder.keyIndex < 0
+      ) {
+        throw new Error('Invalid remainder object provided');
+      }
+
+      remainder = {
+        address: noChecksum(remainder.address),
+        value: balance - payment,
+        keyIndex: remainder.keyIndex
+      };
+    } else if (balance != payment) {
+      throw new Error('Remainder object required');
+    }
+
+    return await this._getSignedTransactions(transfers, inputs, remainder);
   }
 
   ///////// Private methods should not be called directly! /////////
@@ -172,7 +263,10 @@ export default class IOTA {
           buf = txOutputStruct.buffer();
           proxy = txOutputStruct.fields;
           txOutputStruct._setBuff(response);
-          resolve({ bundleHash: proxy.bundleHash, finalized: proxy.finalized });
+          resolve({
+            bundleHash: proxy.bundleHash,
+            finalized: proxy.finalized
+          });
         })
         .catch(e => {
           reject(e);
@@ -210,7 +304,7 @@ export default class IOTA {
     return signatureFragments;
   }
 
-  async addSignatureFragmentsToBundle(bundle, security) {
+  async addSignatureFragmentsToBundle(bundle) {
     for (var i = 0; i < bundle.bundle.length; i++) {
       if (bundle.bundle[i].value < 0) {
         var address = bundle.bundle[i].address;
@@ -220,7 +314,7 @@ export default class IOTA {
 
         // if user chooses higher than 27-tryte security
         // for each security level, add an additional signature
-        for (var j = 1; j < security; j++) {
+        for (var j = 1; j < this.security; j++) {
           //  Because the signature is > 2187 trytes, we need to
           //  find the subsequent transaction to add the remainder of the signature
           //  Same address as well as value = 0 (as we already spent the input)
@@ -235,6 +329,81 @@ export default class IOTA {
         }
       }
     }
+  }
+
+  async _signBundle(options) {
+    var { inputMapping, bundle } = options;
+    for (var tx of bundle.bundle) {
+      var index = inputMapping[tx.address] ? inputMapping[tx.address] : 0;
+      var result = await this.transaction(
+        tx.address,
+        index,
+        tx.value,
+        tx.obsoleteTag,
+        tx.currentIndex,
+        tx.lastIndex,
+        tx.timestamp
+      );
+    }
+    await this.addSignatureFragmentsToBundle(bundle);
+    return bundle;
+  }
+
+  async _getSignedTransactions(transfers, inputs, remainder) {
+    // remove checksums
+    transfers.forEach(t => (t.address = noChecksum(t.address)));
+    inputs.forEach(i => (i.address = noChecksum(i.address)));
+
+    // pad transfer tags
+    transfers.forEach(t => (t.tag = t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG));
+    // set correct security level
+    inputs.forEach(i => (i.security = this.security));
+
+    // use the current time
+    const timestamp = Math.floor(Date.now() / 1000);
+    var bundle = new Bundle();
+
+    transfers.forEach(t =>
+      bundle.addEntry(1, t.address, t.value, t.tag, timestamp, -1)
+    );
+    inputs.forEach(i =>
+      bundle.addEntry(
+        i.security,
+        i.address,
+        -i.balance,
+        EMPTY_TAG,
+        timestamp,
+        i.keyIndex
+      )
+    );
+    if (remainder) {
+      bundle.addEntry(
+        1,
+        remainder.address,
+        remainder.value,
+        EMPTY_TAG,
+        timestamp,
+        remainder.keyIndex
+      );
+    }
+    bundle.addTrytes([]);
+    bundle.finalize();
+
+    // map internal addresses to their index
+    var inputMapping = {};
+    inputs.forEach(i => (inputMapping[i.address] = i.keyIndex));
+    inputMapping[remainder.address] = remainder.keyIndex;
+
+    // sign the bundle on the ledger
+    bundle = await this._signBundle({
+      inputMapping,
+      bundle
+    });
+
+    // compute and return the corresponding trytes
+    var bundleTrytes = [];
+    bundle.bundle.forEach(tx => bundleTrytes.push(transactionTrytes(tx)));
+    return bundleTrytes.reverse();
   }
 
   async _getPubKey(index) {
