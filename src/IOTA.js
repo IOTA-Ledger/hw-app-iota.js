@@ -1,4 +1,5 @@
 import Struct from 'struct';
+import { addChecksum, noChecksum } from 'iota.lib.js/lib/utils/utils';
 
 const Commands = {
   INS_SET_SEED: 0x01,
@@ -20,10 +21,83 @@ export default class IOTA {
     this.transport = transport;
     transport.decorateAppAPIMethods(
       this,
-      ['setSeedInput', 'getPubKey', 'signBundle'],
+      ['setSeedInput', 'getAddress', 'signBundle'],
       'IOT'
     );
   }
+
+  async setSeedInput(bip44Path, security = 2) {
+    if (bip44Path.length !== 5) {
+      throw new Error('setSeedInput: bip44Path must be a length of 5!');
+    }
+
+    var pathStruct = new Struct().word64Sle('path');
+    var seedStruct = new Struct()
+      .array('paths', 5, pathStruct)
+      .word64Sle('security');
+    seedStruct.allocate();
+    var buf = seedStruct.buffer();
+    var proxy = seedStruct.fields;
+    for (var i in bip44Path) {
+      proxy.paths[i].path = bip44Path[i];
+    }
+    proxy.security = security;
+
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.transport
+        .send(0x80, Commands.INS_SET_SEED, 0, 0, buf)
+        .then(response => {
+          resolve(response);
+        })
+        .catch(e => {
+          reject(e);
+        });
+    });
+  }
+
+  /**
+   *   Generates anaddress index-based
+   *
+   *   @method getAddress
+   *   @param {int} index                  Key index of the address
+   *   @param {object} options
+   *       @property   {bool} checksum     add 9-tryte checksum
+   *   @returns {string} address
+   **/
+  async getAddress(index, options = {}) {
+    if (!Number.isInteger(index) || index < 0) {
+      throw new Error('Invalid Index provided');
+    }
+    options.checksum = options.checksum || false;
+
+    var address = await this._getPubKey(index);
+    if (options.checksum) {
+      address = addChecksum(address);
+    }
+
+    return address;
+  }
+
+  async signBundle(options) {
+    var { inputMapping, bundle, security } = options;
+    for (var tx of bundle.bundle) {
+      var index = inputMapping[tx.address] ? inputMapping[tx.address] : 0;
+      var result = await this.transaction(
+        tx.address,
+        index,
+        tx.value,
+        tx.obsoleteTag,
+        tx.currentIndex,
+        tx.lastIndex,
+        tx.timestamp
+      );
+    }
+    await this.addSignatureFragmentsToBundle(bundle, security);
+    return bundle;
+  }
+
+  ///////// Private methods should not be called directly! /////////
 
   async sign(index) {
     var signStruct = new Struct().word64Sle('index');
@@ -163,25 +237,7 @@ export default class IOTA {
     }
   }
 
-  async signBundle(options) {
-    var { inputMapping, bundle, security } = options;
-    for (var tx of bundle.bundle) {
-      var index = inputMapping[tx.address] ? inputMapping[tx.address] : 0;
-      var result = await this.transaction(
-        tx.address,
-        index,
-        tx.value,
-        tx.obsoleteTag,
-        tx.currentIndex,
-        tx.lastIndex,
-        tx.timestamp
-      );
-    }
-    await this.addSignatureFragmentsToBundle(bundle, security);
-    return bundle;
-  }
-
-  async getPubKey(index) {
+  async _getPubKey(index) {
     var indexStruct = new Struct().word64Sle('index');
     indexStruct.allocate();
     var buf = indexStruct.buffer();
@@ -198,36 +254,6 @@ export default class IOTA {
           proxy = addressStruct.fields;
           addressStruct._setBuff(response);
           resolve(proxy.address);
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
-  }
-
-  async setSeedInput(bip44Path, security = 2) {
-    if (bip44Path.length !== 5) {
-      throw new Error('setSeedInput: bip44Path must be a length of 5!');
-    }
-
-    var pathStruct = new Struct().word64Sle('path');
-    var seedStruct = new Struct()
-      .array('paths', 5, pathStruct)
-      .word64Sle('security');
-    seedStruct.allocate();
-    var buf = seedStruct.buffer();
-    var proxy = seedStruct.fields;
-    for (var i in bip44Path) {
-      proxy.paths[i].path = bip44Path[i];
-    }
-    proxy.security = security;
-
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport
-        .send(0x80, Commands.INS_SET_SEED, 0, 0, buf)
-        .then(response => {
-          resolve(response);
         })
         .catch(e => {
           reject(e);
