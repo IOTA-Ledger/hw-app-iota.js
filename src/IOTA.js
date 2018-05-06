@@ -139,10 +139,10 @@ export default class IOTA {
    *
    * @param {{address: string, value: integer, tag: string}[]} transfers
    * @param {{address: string, balance: integer, keyIndex: integer}[]} inputs
-   * @param {{address: string, keyIndex: integer}} remainder
+   * @param {{address: string, keyIndex: integer}} [remainder]
    * @returns {promise<string[]>}
    */
-  async getSignedTransactions(transfers, inputs, remainder = {}) {
+  async getSignedTransactions(transfers, inputs, remainder) {
     if (!this.security) {
       throw new Error('getSignedTransactions: setSeedInput not yet called');
     }
@@ -150,7 +150,7 @@ export default class IOTA {
       throw new Error('Invalid transfers array provided');
     }
     if (!isInputsArray(inputs)) {
-      throw new Error('Invalid transfers array provided');
+      throw new Error('Invalid inputs array provided');
     }
 
     // filter unnecessary inputs
