@@ -5,8 +5,13 @@ import {
   noChecksum,
   transactionTrytes
 } from 'iota.lib.js/lib/utils/utils';
-import { isAddress, isTrytes } from 'iota.lib.js/lib/utils/inputValidator';
 import bippath from 'bip32-path';
+import * as inputValidator from './input_validator';
+
+/**
+ * IOTA API
+ * @module hw-app-iota
+ */
 
 const EMPTY_TAG = '9'.repeat(27);
 const Commands = {
@@ -19,58 +24,12 @@ const Commands = {
   INS_WRITE_INDEXES: 0x07
 };
 
-function isTransfersArray(transfers) {
-  if (!(transfers instanceof Array)) {
-    return false;
-  }
-
-  for (var transfer of transfers) {
-    if (!isAddress(transfer.address)) {
-      return false;
-    }
-    if (!Number.isInteger(transfer.value) || transfer.value < 0) {
-      return false;
-    }
-    if (!isTrytes(transfer.tag, '0,27')) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function isInputsArray(inputs) {
-  if (!(inputs instanceof Array)) {
-    return false;
-  }
-
-  for (var input of inputs) {
-    if (!isAddress(input.address)) {
-      return false;
-    }
-    if (!Number.isInteger(input.balance) || input.balance < 0) {
-      return false;
-    }
-    if (!Number.isInteger(input.keyIndex) || input.keyIndex < 0) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
- * IOTA API
- * @module hw-app-iota
- */
-export default Iota;
-
 /**
  * Class for the interaction with the Ledger IOTA application.
  *
  * @example
- * import IOTA from "@ledgerhq/hw-app-iota";
- * const iota = new IOTA(transport);
+ * import Iota from "hw-app-iota";
+ * const iota = new Iota(transport);
  */
 class Iota {
   constructor(transport) {
@@ -99,14 +58,14 @@ class Iota {
    * iota.setActiveSeed("44'/107A'/0'/0/0", 2);
    **/
   async setActiveSeed(path, security = 2) {
-    if (!bippath.validString(path)) {
+    if (!bippath.validateString(path)) {
       throw new Error('Invalid BIP44 path string');
     }
     const pathArray = bippath.fromString(path).toPathArray();
     if (!pathArray || pathArray.length !== 5) {
       throw new Error('Invalid BIP44 path length');
     }
-    if (!Number.isInteger(security) || security < 1 || security > 3) {
+    if (!inputValidator.isSecurity(security)) {
       throw new Error('Invalid security level provided');
     }
     this.security = security;
@@ -127,7 +86,7 @@ class Iota {
     if (!this.security) {
       throw new Error('getAddress: setSeedInput not yet called');
     }
-    if (!Number.isInteger(index) || index < 0) {
+    if (!inputValidator.isIndex(index)) {
       throw new Error('Invalid Index provided');
     }
     options.checksum = options.checksum || false;
@@ -160,10 +119,10 @@ class Iota {
     if (!this.security) {
       throw new Error('getSignedTransactions: setSeedInput not yet called');
     }
-    if (!isTransfersArray(transfers)) {
+    if (!inputValidator.isTransfersArray(transfers)) {
       throw new Error('Invalid transfers array provided');
     }
-    if (!isInputsArray(inputs)) {
+    if (!inputValidator.isInputsArray(inputs)) {
       throw new Error('Invalid inputs array provided');
     }
 
@@ -182,11 +141,7 @@ class Iota {
     const payment = transfers.reduce((a, t) => a + t.value, 0);
 
     if (remainder) {
-      if (
-        !isAddress(remainder.address) ||
-        !Number.isInteger(remainder.keyIndex) ||
-        remainder.keyIndex < 0
-      ) {
+      if (!inputValidator.isRemainderObject(remainder)) {
         throw new Error('Invalid remainder object provided');
       }
 
@@ -211,7 +166,7 @@ class Iota {
     if (!this.security) {
       throw new Error('displayAddress: setSeedInput not yet called');
     }
-    if (!Number.isInteger(index) || index < 0) {
+    if (!inputValidator.isIndex(index)) {
       throw new Error('Invalid Index provided');
     }
 
@@ -573,3 +528,5 @@ class Iota {
     });
   }
 }
+
+export default Iota;

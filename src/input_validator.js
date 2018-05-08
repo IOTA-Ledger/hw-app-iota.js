@@ -1,0 +1,73 @@
+import { isAddress, isTrytes } from 'iota.lib.js/lib/utils/inputValidator';
+
+function _isArray(array) {
+  return array instanceof Array;
+}
+
+function _isObject(object) {
+  const isNull = object === null;
+
+  return !isNull && typeof object === 'object';
+}
+
+export function isSecurity(security) {
+  return Number.isInteger(security) && security >= 1 && security <= 3;
+}
+
+export function isIndex(index) {
+  return Number.isInteger(index) && index >= 0;
+}
+
+export function isTransfersArray(transfers) {
+  if (!_isArray(transfers)) {
+    return false;
+  }
+
+  for (let transfer of transfers) {
+    if (!isAddress(transfer.address)) {
+      return false;
+    }
+    if (!Number.isInteger(transfer.value) || transfer.value < 0) {
+      return false;
+    }
+    if (!isTrytes(transfer.tag, '0,27')) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export function isInputsArray(inputs) {
+  if (!_isArray(inputs)) {
+    return false;
+  }
+
+  for (let input of inputs) {
+    if (!isAddress(input.address)) {
+      return false;
+    }
+    if (!Number.isInteger(input.balance) || input.balance < 0) {
+      return false;
+    }
+    if (!isIndex(input.keyIndex)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+export function isRemainderObject(remainder) {
+  if (!_isObject(remainder)) {
+    return false;
+  }
+  if (!isAddress(remainder.address)) {
+    return false;
+  }
+  if (!isIndex(remainder.keyIndex)) {
+    return false;
+  }
+
+  return true;
+}
