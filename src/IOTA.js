@@ -13,7 +13,9 @@ const Commands = {
   INS_PUBKEY: 0x02,
   INS_TX: 0x03,
   INS_SIGN: 0x04,
-  INS_DISP_ADDR: 0x05
+  INS_DISP_ADDR: 0x05,
+  INS_READ_INDEXES: 0x06,
+  INS_WRITE_INDEXES: 0x07
 };
 
 function isTransfersArray(transfers) {
@@ -69,7 +71,14 @@ export default class IOTA {
     this.security = 0;
     transport.decorateAppAPIMethods(
       this,
-      ['setSeedInput', 'getAddress', 'getSignedTransactions'],
+      [
+        'setSeedInput',
+        'getAddress',
+        'getSignedTransactions',
+        'displayAddress',
+        'readIndexes',
+        'writeIndexes'
+      ],
       'IOT'
     );
   }
@@ -109,13 +118,13 @@ export default class IOTA {
   }
 
   /**
-   * Generates anaddress index-based
+   * Generates an address index-based.
    *
    * @method getAddress
-   * @param {int} index             key index of the address
-   * @param {object} options
-   *   @property {bool} checksum    add 9-tryte checksum
-   * @returns {promise<string>} address
+   * @param {Integer} index - Index of the address
+   * @param {Object} [options]
+   * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
+   * @returns {Promise<String>} - Tryte-encoded address
    **/
   async getAddress(index, options = {}) {
     if (!this.security) {
@@ -135,12 +144,20 @@ export default class IOTA {
   }
 
   /**
-   * Returns an array of raw transaction data (trytes) including the signatures
+   * Returns an array of raw transaction data (trytes) including the signatures.
    *
-   * @param {{address: string, value: integer, tag: string}[]} transfers
-   * @param {{address: string, balance: integer, keyIndex: integer}[]} inputs
-   * @param {{address: string, keyIndex: integer}} [remainder]
-   * @returns {promise<string[]>}
+   * @param {Object[]} transfers - Transfer objects
+   * @param {String} transfers[].address - Tryte-encoded address of recipient
+   * @param {Integer} transfers[].value - Value to be transferred
+   * @param {String} transfers[].tag - Tryte-encoded tag. Maximum value is 27 trytes.
+   * @param {Object[]} inputs - Inputs used for funding the transfer
+   * @param {String} inputs[].address - Tryte-encoded source address
+   * @param {Integer} inputs[].balance - Balance of that input
+   * @param {String} inputs[].keyIndex - Index of the address
+   * @param {Object} [remainder] - Destination for sending the remainder value (of the inputs) to.
+   * @param {String} remainder.address - Tryte-encoded address
+   * @param {Integer} remainder.keyIndex - Index of the address
+   * @returns {Promise<String[]>} - Transaction trytes of 2673 trytes per transaction
    */
   async getSignedTransactions(transfers, inputs, remainder) {
     if (!this.security) {
@@ -186,6 +203,49 @@ export default class IOTA {
     }
 
     return await this._getSignedTransactions(transfers, inputs, remainder);
+  }
+
+  /**
+   * Displays address on Ledger to verify it belongs to ledger seed.
+   *
+   * @method displayAddress
+   * @param {Integer} index - Index of the address
+   **/
+  async displayAddress(index) {
+    if (!this.security) {
+      throw new Error('displayAddress: setSeedInput not yet called');
+    }
+    if (!Number.isInteger(index) || index < 0) {
+      throw new Error('Invalid Index provided');
+    }
+
+    await this._displayAddress(index);
+
+    return;
+  }
+
+  /**
+   * Retrieves the 5 seed indexes stored on the Ledger.
+   *
+   * @method readIndexes
+   * @returns {Promise<Integer[]>}
+   **/
+  async readIndexes() {
+    var indexes = await this._readIndexes();
+
+    return indexes;
+  }
+
+  /**
+   * Writes 5 seed indexes to Ledger.
+   *
+   * @method writeIndexes
+   * @param {Integer[]} indexes - Seed indexes to write
+   **/
+  async writeIndexes(indexes) {
+    await this._writeIndexes(indexes);
+
+    return;
   }
 
   ///////// Private methods should not be called directly! /////////
@@ -425,6 +485,67 @@ export default class IOTA {
           proxy = addressStruct.fields;
           addressStruct._setBuff(response);
           resolve(proxy.address);
+        })
+        .catch(e => {
+          reject(e);
+        });
+    });
+  }
+
+  async _displayAddress(index) {
+    var indexStruct = new Struct().word64Sle('index');
+    indexStruct.allocate();
+    var buf = indexStruct.buffer();
+    var proxy = indexStruct.fields;
+    proxy.index = index;
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.transport
+        .send(0x80, Commands.INS_DISP_ADDR, 0, 0, buf)
+        .then(response => {
+          resolve(response);
+        })
+        .catch(e => {
+          reject(e);
+        });
+    });
+  }
+
+  async _readIndexes() {
+    var indexStruct = new Struct();
+    indexStruct.allocate();
+    var buf = indexStruct.buffer();
+    var proxy = indexStruct.fields;
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.transport
+        .send(0x80, Commands.INS_READ_INDEXES, 0, 0, buf)
+        .then(response => {
+          var indexesStruct = new Struct().array('indexes', 5, 'word64Sle');
+          indexesStruct.allocate();
+          buf = indexesStruct.buffer();
+          proxy = indexesStruct.fields;
+          indexesStruct._setBuff(response);
+          resolve(proxy.indexes);
+        })
+        .catch(e => {
+          reject(e);
+        });
+    });
+  }
+
+  async _writeIndexes(indexes) {
+    var indexStruct = new Struct().array('indexes', 5, 'word64Sle');
+    indexStruct.allocate();
+    var buf = indexStruct.buffer();
+    var proxy = indexStruct.fields;
+    proxy.indexes = indexes;
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.transport
+        .send(0x80, Commands.INS_WRITE_INDEXES, 0, 0, buf)
+        .then(response => {
+          resolve(response);
         })
         .catch(e => {
           reject(e);
