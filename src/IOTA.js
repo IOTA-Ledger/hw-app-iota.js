@@ -71,8 +71,14 @@ export default class IOTA {
     this.security = 0;
     transport.decorateAppAPIMethods(
       this,
-      ['setSeedInput', 'getAddress', 'getSignedTransactions',
-       'displayAddress', 'readIndexes', 'writeIndexes'],
+      [
+        'setSeedInput',
+        'getAddress',
+        'getSignedTransactions',
+        'displayAddress',
+        'readIndexes',
+        'writeIndexes'
+      ],
       'IOT'
     );
   }
@@ -190,7 +196,7 @@ export default class IOTA {
 
     return await this._getSignedTransactions(transfers, inputs, remainder);
   }
-    
+
   /**
    * Displays address on Ledger to verify it belongs to ledger seed
    *
@@ -220,9 +226,9 @@ export default class IOTA {
     if (!this.security) {
       throw new Error('readIndexes: setSeedInput not yet called');
     }
-    
+
     var indexes = await this._readIndexes();
-    
+
     return indexes;
   }
 
@@ -236,9 +242,9 @@ export default class IOTA {
     if (!this.security) {
       throw new Error('writeIndexes: setSeedInput not yet called');
     }
-    
+
     await this._writeIndexes(indexes);
-    
+
     return;
   }
 
@@ -485,7 +491,7 @@ export default class IOTA {
         });
     });
   }
-    
+
   async _displayAddress(index) {
     var indexStruct = new Struct().word64Sle('index');
     indexStruct.allocate();
