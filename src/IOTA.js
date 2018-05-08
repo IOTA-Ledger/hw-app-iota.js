@@ -118,13 +118,13 @@ export default class IOTA {
   }
 
   /**
-   * Generates anaddress index-based
+   * Generates an address index-based.
    *
    * @method getAddress
-   * @param {int} index             key index of the address
-   * @param {object} options
-   *   @property {bool} checksum    add 9-tryte checksum
-   * @returns {promise<string>} address
+   * @param {Integer} index - Index of the address
+   * @param {Object} [options]
+   * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
+   * @returns {Promise<String>} - Tryte-encoded address
    **/
   async getAddress(index, options = {}) {
     if (!this.security) {
@@ -144,12 +144,20 @@ export default class IOTA {
   }
 
   /**
-   * Returns an array of raw transaction data (trytes) including the signatures
+   * Returns an array of raw transaction data (trytes) including the signatures.
    *
-   * @param {{address: string, value: integer, tag: string}[]} transfers
-   * @param {{address: string, balance: integer, keyIndex: integer}[]} inputs
-   * @param {{address: string, keyIndex: integer}} [remainder]
-   * @returns {promise<string[]>}
+   * @param {Object[]} transfers - Transfer objects
+   * @param {String} transfers[].address - Tryte-encoded address of recipient
+   * @param {Integer} transfers[].value - Value to be transferred
+   * @param {String} transfers[].tag - Tryte-encoded tag. Maximum value is 27 trytes.
+   * @param {Object[]} inputs - Inputs used for funding the transfer
+   * @param {String} inputs[].address - Tryte-encoded source address
+   * @param {Integer} inputs[].balance - Balance of that input
+   * @param {String} inputs[].keyIndex - Index of the address
+   * @param {Object} [remainder] - Destination for sending the remainder value (of the inputs) to.
+   * @param {String} remainder.address - Tryte-encoded address
+   * @param {Integer} remainder.keyIndex - Index of the address
+   * @returns {Promise<String[]>} - Transaction trytes of 2673 trytes per transaction
    */
   async getSignedTransactions(transfers, inputs, remainder) {
     if (!this.security) {
@@ -198,10 +206,10 @@ export default class IOTA {
   }
 
   /**
-   * Displays address on Ledger to verify it belongs to ledger seed
+   * Displays address on Ledger to verify it belongs to ledger seed.
    *
    * @method displayAddress
-   * @param {int} index             key index of the address
+   * @param {Integer} index - Index of the address
    **/
   async displayAddress(index) {
     if (!this.security) {
@@ -217,10 +225,10 @@ export default class IOTA {
   }
 
   /**
-   * Retrieves the 5 seed indexes stored on the Ledger
+   * Retrieves the 5 seed indexes stored on the Ledger.
    *
    * @method readIndexes
-   * @returns {promise<int[5]>}
+   * @returns {Promise<Integer[]>}
    **/
   async readIndexes() {
     var indexes = await this._readIndexes();
@@ -229,10 +237,10 @@ export default class IOTA {
   }
 
   /**
-   * Writes 5 seed indexes to ledger
+   * Writes 5 seed indexes to Ledger.
    *
    * @method writeIndexes
-   * @param {int}[5] index             seed indexes to write
+   * @param {Integer[]} indexes - Seed indexes to write
    **/
   async writeIndexes(indexes) {
     await this._writeIndexes(indexes);
