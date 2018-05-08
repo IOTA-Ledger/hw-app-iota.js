@@ -13,7 +13,9 @@ const Commands = {
   INS_PUBKEY: 0x02,
   INS_TX: 0x03,
   INS_SIGN: 0x04,
-  INS_DISP_ADDR: 0x05
+  INS_DISP_ADDR: 0x05,
+  INS_READ_INDEXES: 0x06,
+  INS_WRITE_INDEXES: 0x07
 };
 
 function isTransfersArray(transfers) {
@@ -69,7 +71,8 @@ export default class IOTA {
     this.security = 0;
     transport.decorateAppAPIMethods(
       this,
-      ['setSeedInput', 'getAddress', 'getSignedTransactions'],
+      ['setSeedInput', 'getAddress', 'getSignedTransactions',
+       'displayAddress', 'readIndexes', 'writeIndexes'],
       'IOT'
     );
   }
@@ -186,6 +189,57 @@ export default class IOTA {
     }
 
     return await this._getSignedTransactions(transfers, inputs, remainder);
+  }
+    
+  /**
+   * Displays address on Ledger to verify it belongs to ledger seed
+   *
+   * @method displayAddress
+   * @param {int} index             key index of the address
+   **/
+  async displayAddress(index) {
+    if (!this.security) {
+      throw new Error('displayAddress: setSeedInput not yet called');
+    }
+    if (!Number.isInteger(index) || index < 0) {
+      throw new Error('Invalid Index provided');
+    }
+
+    await this._displayAddress(index);
+
+    return;
+  }
+
+  /**
+   * Retrieves the 5 seed indexes stored on the Ledger
+   *
+   * @method readIndexes
+   * @returns {promise<int[5]>}
+   **/
+  async readIndexes() {
+    if (!this.security) {
+      throw new Error('readIndexes: setSeedInput not yet called');
+    }
+    
+    var indexes = await this._readIndexes();
+    
+    return indexes;
+  }
+
+  /**
+   * Writes 5 seed indexes to ledger
+   *
+   * @method writeIndexes
+   * @param {int}[5] index             seed indexes to write
+   **/
+  async writeIndexes(indexes) {
+    if (!this.security) {
+      throw new Error('writeIndexes: setSeedInput not yet called');
+    }
+    
+    await this._writeIndexes(indexes);
+    
+    return;
   }
 
   ///////// Private methods should not be called directly! /////////
@@ -425,6 +479,67 @@ export default class IOTA {
           proxy = addressStruct.fields;
           addressStruct._setBuff(response);
           resolve(proxy.address);
+        })
+        .catch(e => {
+          reject(e);
+        });
+    });
+  }
+    
+  async _displayAddress(index) {
+    var indexStruct = new Struct().word64Sle('index');
+    indexStruct.allocate();
+    var buf = indexStruct.buffer();
+    var proxy = indexStruct.fields;
+    proxy.index = index;
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.transport
+        .send(0x80, Commands.INS_DISP_ADDR, 0, 0, buf)
+        .then(response => {
+          resolve(response);
+        })
+        .catch(e => {
+          reject(e);
+        });
+    });
+  }
+
+  async _readIndexes() {
+    var indexStruct = new Struct();
+    indexStruct.allocate();
+    var buf = indexStruct.buffer();
+    var proxy = indexStruct.fields;
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.transport
+        .send(0x80, Commands.INS_READ_INDEXES, 0, 0, buf)
+        .then(response => {
+          var indexesStruct = new Struct().array('indexes', 5, 'word64Sle');
+          indexesStruct.allocate();
+          buf = indexesStruct.buffer();
+          proxy = indexesStruct.fields;
+          indexesStruct._setBuff(response);
+          resolve(proxy.indexes);
+        })
+        .catch(e => {
+          reject(e);
+        });
+    });
+  }
+
+  async _writeIndexes(indexes) {
+    var indexStruct = new Struct().array('indexes', 5, 'word64Sle');
+    indexStruct.allocate();
+    var buf = indexStruct.buffer();
+    var proxy = indexStruct.fields;
+    proxy.indexes = indexes;
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.transport
+        .send(0x80, Commands.INS_WRITE_INDEXES, 0, 0, buf)
+        .then(response => {
+          resolve(response);
         })
         .catch(e => {
           reject(e);
