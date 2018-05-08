@@ -63,7 +63,7 @@ function isInputsArray(inputs) {
  * IOTA API
  * @module hw-app-iota
  */
-export default IOTA;
+export default Iota;
 
 /**
  * Class for the interaction with the Ledger IOTA application.
@@ -72,7 +72,7 @@ export default IOTA;
  * import IOTA from "@ledgerhq/hw-app-iota";
  * const iota = new IOTA(transport);
  */
-class IOTA {
+class Iota {
   constructor(transport) {
     this.transport = transport;
     this.security = 0;

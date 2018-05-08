@@ -7,7 +7,7 @@
     "build": "babel src -d lib"
   },
   "description": "Ledger Hardware Wallet IOTA Application API",
-  "main": "lib/IOTA.js",
+  "main": "lib/iota.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/IOTA-Ledger/hw-app-iota.js.git"
