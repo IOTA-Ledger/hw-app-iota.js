@@ -223,10 +223,6 @@ export default class IOTA {
    * @returns {promise<int[5]>}
    **/
   async readIndexes() {
-    if (!this.security) {
-      throw new Error('readIndexes: setSeedInput not yet called');
-    }
-
     var indexes = await this._readIndexes();
 
     return indexes;
@@ -239,10 +235,6 @@ export default class IOTA {
    * @param {int}[5] index             seed indexes to write
    **/
   async writeIndexes(indexes) {
-    if (!this.security) {
-      throw new Error('writeIndexes: setSeedInput not yet called');
-    }
-
     await this._writeIndexes(indexes);
 
     return;
