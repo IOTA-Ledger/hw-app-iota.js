@@ -40,7 +40,7 @@ class Iota {
       [
         'setActiveSeed',
         'getAddress',
-        'getSignedTransactions',
+        'signTransaction',
         'displayAddress',
         'readIndexes',
         'writeIndexes'
@@ -115,9 +115,9 @@ class Iota {
    * @param {Integer} remainder.keyIndex - Index of the address
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
-  async getSignedTransactions(transfers, inputs, remainder) {
+  async signTransaction(transfers, inputs, remainder) {
     if (!this.security) {
-      throw new Error('getSignedTransactions: setSeedInput not yet called');
+      throw new Error('signTransaction: setSeedInput not yet called');
     }
     if (!inputValidator.isTransfersArray(transfers)) {
       throw new Error('Invalid transfers array provided');
@@ -154,7 +154,7 @@ class Iota {
       throw new Error('Remainder object required');
     }
 
-    return await this._getSignedTransactions(transfers, inputs, remainder);
+    return await this._signTransaction(transfers, inputs, remainder);
   }
 
   /**
@@ -384,7 +384,7 @@ class Iota {
     return bundle;
   }
 
-  async _getSignedTransactions(transfers, inputs, remainder) {
+  async _signTransaction(transfers, inputs, remainder) {
     // remove checksums
     transfers.forEach(t => (t.address = noChecksum(t.address)));
     inputs.forEach(i => (i.address = noChecksum(i.address)));
