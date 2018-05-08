@@ -6,6 +6,7 @@ import {
   transactionTrytes
 } from 'iota.lib.js/lib/utils/utils';
 import { isAddress, isTrytes } from 'iota.lib.js/lib/utils/inputValidator';
+import bippath from 'bip32-path';
 
 const EMPTY_TAG = '9'.repeat(27);
 const Commands = {
@@ -60,19 +61,25 @@ function isInputsArray(inputs) {
 
 /**
  * IOTA API
+ * @module hw-app-iota
+ */
+export default IOTA;
+
+/**
+ * Class for the interaction with the Ledger IOTA application.
  *
  * @example
  * import IOTA from "@ledgerhq/hw-app-iota";
- * const iota = new IOTA(transport)
+ * const iota = new IOTA(transport);
  */
-export default class IOTA {
+class IOTA {
   constructor(transport) {
     this.transport = transport;
     this.security = 0;
     transport.decorateAppAPIMethods(
       this,
       [
-        'setSeedInput',
+        'setActiveSeed',
         'getAddress',
         'getSignedTransactions',
         'displayAddress',
@@ -83,48 +90,38 @@ export default class IOTA {
     );
   }
 
-  async setSeedInput(bip44Path, security = 2) {
-    if (bip44Path.length !== 5) {
-      throw new Error('setSeedInput: bip44Path must be a length of 5!');
+  /**
+   * Initializes the Ledger.
+   *
+   * @param {String} path - String representation of the 5-level BIP32 path
+   * @param {Number} [security=2] - IOTA security level to use
+   * @example
+   * iota.setActiveSeed("44'/107A'/0'/0/0", 2);
+   **/
+  async setActiveSeed(path, security = 2) {
+    if (!bippath.validString(path)) {
+      throw new Error('Invalid BIP44 path string');
+    }
+    const pathArray = bippath.fromString(path).toPathArray();
+    if (!pathArray || pathArray.length !== 5) {
+      throw new Error('Invalid BIP44 path length');
     }
     if (!Number.isInteger(security) || security < 1 || security > 3) {
       throw new Error('Invalid security level provided');
     }
     this.security = security;
 
-    var pathStruct = new Struct().word64Sle('path');
-    var seedStruct = new Struct()
-      .array('paths', 5, pathStruct)
-      .word64Sle('security');
-    seedStruct.allocate();
-    var buf = seedStruct.buffer();
-    var proxy = seedStruct.fields;
-    for (var i in bip44Path) {
-      proxy.paths[i].path = bip44Path[i];
-    }
-    proxy.security = security;
-
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport
-        .send(0x80, Commands.INS_SET_SEED, 0, 0, buf)
-        .then(response => {
-          resolve(response);
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
+    await this._setActiveSeed(pathArray, security);
+    return;
   }
 
   /**
    * Generates an address index-based.
    *
-   * @method getAddress
    * @param {Integer} index - Index of the address
    * @param {Object} [options]
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
-   * @returns {Promise<String>} - Tryte-encoded address
+   * @returns {Promise<String>} Tryte-encoded address
    **/
   async getAddress(index, options = {}) {
     if (!this.security) {
@@ -157,7 +154,7 @@ export default class IOTA {
    * @param {Object} [remainder] - Destination for sending the remainder value (of the inputs) to.
    * @param {String} remainder.address - Tryte-encoded address
    * @param {Integer} remainder.keyIndex - Index of the address
-   * @returns {Promise<String[]>} - Transaction trytes of 2673 trytes per transaction
+   * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
   async getSignedTransactions(transfers, inputs, remainder) {
     if (!this.security) {
@@ -208,7 +205,6 @@ export default class IOTA {
   /**
    * Displays address on Ledger to verify it belongs to ledger seed.
    *
-   * @method displayAddress
    * @param {Integer} index - Index of the address
    **/
   async displayAddress(index) {
@@ -227,7 +223,6 @@ export default class IOTA {
   /**
    * Retrieves the 5 seed indexes stored on the Ledger.
    *
-   * @method readIndexes
    * @returns {Promise<Integer[]>}
    **/
   async readIndexes() {
@@ -239,7 +234,6 @@ export default class IOTA {
   /**
    * Writes 5 seed indexes to Ledger.
    *
-   * @method writeIndexes
    * @param {Integer[]} indexes - Seed indexes to write
    **/
   async writeIndexes(indexes) {
@@ -249,6 +243,32 @@ export default class IOTA {
   }
 
   ///////// Private methods should not be called directly! /////////
+
+  async _setActiveSeed(pathArray, security) {
+    var pathStruct = new Struct().word64Sle('path');
+    var seedStruct = new Struct()
+      .array('paths', 5, pathStruct)
+      .word64Sle('security');
+    seedStruct.allocate();
+    var buf = seedStruct.buffer();
+    var proxy = seedStruct.fields;
+    for (var i in pathArray) {
+      proxy.paths[i].path = pathArray[i];
+    }
+    proxy.security = security;
+
+    var _this = this;
+    return new Promise(function(resolve, reject) {
+      _this.transport
+        .send(0x80, Commands.INS_SET_SEED, 0, 0, buf)
+        .then(response => {
+          resolve(response);
+        })
+        .catch(e => {
+          reject(e);
+        });
+    });
+  }
 
   async sign(index) {
     var signStruct = new Struct().word64Sle('index');
