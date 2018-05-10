@@ -12,7 +12,7 @@ import AppIota from 'hw-app-iota';
 const getAddress = async () => {
   const transport = await Transport.create();
   const hwapp = new AppIota(transport);
-  await hwapp.setSeedInput([0x8000002c, 0x80000001, 0x80000000, 0x00000000, 0x00000000], 2);
+  await hwapp.setActiveSeed("44'/107A'/0'/0/0", 2);
   return await hwapp.getAddress(0, {checksum: true});
 };
 
