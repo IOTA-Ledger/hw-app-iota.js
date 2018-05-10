@@ -1,13 +1,13 @@
 import { isAddress, isTrytes } from 'iota.lib.js/lib/utils/inputValidator';
 
-function _isArray(array) {
-  return array instanceof Array;
-}
-
 function _isObject(object) {
   const isNull = object === null;
 
   return !isNull && typeof object === 'object';
+}
+
+export function isArray(array) {
+  return array instanceof Array;
 }
 
 export function isSecurity(security) {
@@ -19,7 +19,7 @@ export function isIndex(index) {
 }
 
 export function isTransfersArray(transfers) {
-  if (!_isArray(transfers)) {
+  if (!isArray(transfers)) {
     return false;
   }
 
@@ -39,7 +39,7 @@ export function isTransfersArray(transfers) {
 }
 
 export function isInputsArray(inputs) {
-  if (!_isArray(inputs)) {
+  if (!isArray(inputs)) {
     return false;
   }
 

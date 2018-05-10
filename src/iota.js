@@ -187,6 +187,16 @@ class Iota {
    * @param {Integer[]} indexes - Seed indexes to write
    **/
   async writeIndexes(indexes) {
+    if (
+      !inputValidator.isArray(indexes) ||
+      !indexes.every(inputValidator.isIndex)
+    ) {
+      throw new Error('Invalid Indexes array provided');
+    }
+    if (indexes.length != 5) {
+      throw new Error('Unsupported number of indexes');
+    }
+
     await this._writeIndexes(indexes);
   }
 
