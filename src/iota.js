@@ -267,15 +267,7 @@ class Iota {
     };
   }
 
-  async _transaction(
-    address,
-    address_idx,
-    value,
-    tag,
-    tx_idx,
-    tx_len,
-    tx_time
-  ) {
+  async _transaction(address, address_idx, value, tag, tx_idx, tx_len, time) {
     const txInStruct = new Struct()
       .chars('address', 81)
       .word64Sle('address_idx')
@@ -283,7 +275,7 @@ class Iota {
       .chars('tag', 27)
       .word64Sle('tx_idx')
       .word64Sle('tx_len')
-      .word64Sle('tx_time');
+      .word64Sle('time');
 
     txInStruct.allocate();
     const fields = txInStruct.fields;
@@ -293,7 +285,7 @@ class Iota {
     fields.tag = tag;
     fields.tx_idx = tx_idx;
     fields.tx_len = tx_len;
-    fields.tx_time = tx_time;
+    fields.time = time;
 
     const response = await this._sendCommand(
       Commands.INS_TX,
@@ -313,78 +305,70 @@ class Iota {
     };
   }
 
-  async signBundleResultToFragments(index) {
-    var signatureFragmentStr = '';
-    var signatureLength = 2187;
-    var signatureFragments = [];
-
+  async _getSignatureFragments(index) {
+    var signature = '';
     while (true) {
-      var result = await this._sign(index);
-      signatureFragmentStr += result.signature;
+      const result = await this._sign(index);
+      signature += result.signature;
+
       if (!result.fragmentsRemaining) {
         break;
       }
     }
-    // Should never get any decimals
-    // round is just there to make sure amountOfFragments is an integer.
-    var amountOfFragments = Math.round(
-      signatureFragmentStr.length / signatureLength
-    );
-    // Pad remainder of fragment
-    for (var i = 0; i < amountOfFragments; i++) {
-      signatureFragments.push(
-        signatureFragmentStr.substring(
-          i * signatureLength,
-          (i + 1) * signatureLength
-        )
-      );
-    }
 
-    return signatureFragments;
+    // split into segments of exactly 2187 chars
+    return signature.match(/.{2187}/g);
   }
 
-  async addSignatureFragmentsToBundle(bundle) {
+  async _addSignatureFragmentsToBundle(bundle) {
     for (var i = 0; i < bundle.bundle.length; i++) {
-      if (bundle.bundle[i].value < 0) {
-        var address = bundle.bundle[i].address;
-        var signatureFragments = await this.signBundleResultToFragments(i);
+      // only sign inputs
+      if (bundle.bundle[i].value >= 0) {
+        continue;
+      }
 
-        bundle.bundle[i].signatureMessageFragment = signatureFragments.shift();
+      const address = bundle.bundle[i].address;
+      const signatureFragments = await this._getSignatureFragments(i);
 
-        // if user chooses higher than 27-tryte security
-        // for each security level, add an additional signature
-        for (var j = 1; j < this.security; j++) {
-          //  Because the signature is > 2187 trytes, we need to
-          //  find the subsequent transaction to add the remainder of the signature
-          //  Same address as well as value = 0 (as we already spent the input)
-          if (
-            bundle.bundle[i + j].address === address &&
-            bundle.bundle[i + j].value === 0
-          ) {
-            bundle.bundle[
-              i + j
-            ].signatureMessageFragment = signatureFragments.shift();
-          }
+      bundle.bundle[i].signatureMessageFragment = signatureFragments.shift();
+
+      // set the signature fragments for all successive meta transactions
+      for (var j = 1; j < this.security; j++) {
+        if (++i >= bundle.bundle.length) {
+          return;
+        }
+
+        const tx = bundle.bundle[i];
+        if (tx.address === address && tx.value === 0) {
+          tx.signatureMessageFragment = signatureFragments.shift();
         }
       }
     }
   }
 
-  async _signBundle(options) {
-    var { inputMapping, bundle } = options;
-    for (var tx of bundle.bundle) {
-      var index = inputMapping[tx.address] ? inputMapping[tx.address] : 0;
-      var result = await this._transaction(
+  async _signBundle(bundle, addressKeyIndices) {
+    var finalized = false;
+    for (const tx of bundle.bundle) {
+      const keyIndex = addressKeyIndices[tx.address]
+        ? addressKeyIndices[tx.address]
+        : 0;
+      const result = await this._transaction(
         tx.address,
-        index,
+        keyIndex,
         tx.value,
         tx.obsoleteTag,
         tx.currentIndex,
         tx.lastIndex,
         tx.timestamp
       );
+      finalized = result.finalized;
     }
-    await this.addSignatureFragmentsToBundle(bundle);
+
+    if (!finalized) {
+      throw new Error('Bundle not finalized');
+    }
+
+    await this._addSignatureFragmentsToBundle(bundle);
     return bundle;
   }
 
@@ -429,17 +413,14 @@ class Iota {
     bundle.finalize();
 
     // map internal addresses to their index
-    var inputMapping = {};
-    inputs.forEach(i => (inputMapping[i.address] = i.keyIndex));
+    var addressKeyIndices = {};
+    inputs.forEach(i => (addressKeyIndices[i.address] = i.keyIndex));
     if (remainder) {
-      inputMapping[remainder.address] = remainder.keyIndex;
+      addressKeyIndices[remainder.address] = remainder.keyIndex;
     }
 
     // sign the bundle on the ledger
-    bundle = await this._signBundle({
-      inputMapping,
-      bundle
-    });
+    bundle = await this._signBundle(bundle, addressKeyIndices);
 
     // compute and return the corresponding trytes
     var bundleTrytes = [];
