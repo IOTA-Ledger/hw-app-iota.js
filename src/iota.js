@@ -139,6 +139,13 @@ class Iota {
     const balance = inputs.reduce((a, i) => a + i.balance, 0);
     const payment = transfers.reduce((a, t) => a + t.value, 0);
 
+    if (balance === payment) {
+      // ignore the remainder, if there is no change
+      remainder = {};
+    } else if (!remainder) {
+      throw new Error('Remainder object required');
+    }
+
     if (remainder) {
       if (!inputValidator.isRemainderObject(remainder)) {
         throw new Error('Invalid remainder object provided');
@@ -149,8 +156,6 @@ class Iota {
         value: balance - payment,
         keyIndex: remainder.keyIndex
       };
-    } else if (balance != payment) {
-      throw new Error('Remainder object required');
     }
 
     return await this._signTransaction(transfers, inputs, remainder);
