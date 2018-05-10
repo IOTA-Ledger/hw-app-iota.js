@@ -55,7 +55,7 @@ class Iota {
    * @param {String} path - String representation of the 5-level BIP32 path
    * @param {Number} [security=2] - IOTA security level to use
    * @example
-   * iota.setActiveSeed("44'/107A'/0'/0/0", 2);
+   * iota.setActiveSeed("44'/4218'/0'/0/0", 2);
    **/
   async setActiveSeed(path, security = 2) {
     if (!bippath.validateString(path)) {
@@ -70,8 +70,7 @@ class Iota {
     }
     this.security = security;
 
-    await this._setActiveSeed(pathArray, security);
-    return;
+    await this._setSeed(pathArray, security);
   }
 
   /**
@@ -91,7 +90,7 @@ class Iota {
     }
     options.checksum = options.checksum || false;
 
-    var address = await this._getPubKey(index);
+    var address = await this._publicKey(index);
     if (options.checksum) {
       address = addChecksum(address);
     }
@@ -171,8 +170,6 @@ class Iota {
     }
 
     await this._displayAddress(index);
-
-    return;
   }
 
   /**
@@ -181,9 +178,7 @@ class Iota {
    * @returns {Promise<Integer[]>}
    **/
   async readIndexes() {
-    var indexes = await this._readIndexes();
-
-    return indexes;
+    return await this._readIndexes();
   }
 
   /**
@@ -193,80 +188,80 @@ class Iota {
    **/
   async writeIndexes(indexes) {
     await this._writeIndexes(indexes);
-
-    return;
   }
 
   ///////// Private methods should not be called directly! /////////
 
-  async _setActiveSeed(pathArray, security) {
-    var pathStruct = new Struct().word64Sle('path');
-    var seedStruct = new Struct()
-      .array('paths', 5, pathStruct)
+  async _setSeed(pathArray, security) {
+    const setSeedInStruct = new Struct()
+      .array('pathArray', 5, 'word64Sle')
       .word64Sle('security');
-    seedStruct.allocate();
-    var buf = seedStruct.buffer();
-    var proxy = seedStruct.fields;
-    for (var i in pathArray) {
-      proxy.paths[i].path = pathArray[i];
-    }
-    proxy.security = security;
 
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport
-        .send(0x80, Commands.INS_SET_SEED, 0, 0, buf)
-        .then(response => {
-          resolve(response);
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
-  }
+    setSeedInStruct.allocate();
+    setSeedInStruct.fields.pathArray = pathArray;
+    setSeedInStruct.fields.security = security;
 
-  async sign(index) {
-    var signStruct = new Struct().word64Sle('index');
-    signStruct.allocate();
-    var buf = signStruct.buffer();
-    var proxy = signStruct.fields;
-    proxy.index = index;
-
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport
-        .send(0x80, Commands.INS_SIGN, 0, 0, buf)
-        .then(response => {
-          var signOutputStruct = new Struct()
-            .chars('signature', 243)
-            .word8Sle('fragmentsRemaining');
-          signOutputStruct.allocate();
-          buf = signOutputStruct.buffer();
-          proxy = signOutputStruct.fields;
-          signOutputStruct._setBuff(response);
-          resolve({
-            signature: proxy.signature,
-            fragmentsRemaining: proxy.fragmentsRemaining
-          });
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
-  }
-
-  async transaction(address, address_idx, value, tag, tx_idx, tx_len, tx_time) {
-    console.log(
-      'transaction',
-      address,
-      address_idx,
-      value,
-      tag,
-      tx_idx,
-      tx_len,
-      tx_time
+    await this._sendCommand(
+      Commands.INS_SET_SEED,
+      0,
+      0,
+      setSeedInStruct.buffer()
     );
-    var txStruct = new Struct()
+  }
+
+  async _publicKey(index) {
+    const pubkeyInStruct = new Struct().word64Sle('index');
+
+    pubkeyInStruct.allocate();
+    pubkeyInStruct.fields.index = index;
+
+    const response = await this._sendCommand(
+      Commands.INS_PUBKEY,
+      0,
+      0,
+      pubkeyInStruct.buffer()
+    );
+
+    const pubkeyOutStruct = new Struct().chars('address', 81);
+    pubkeyOutStruct.setBuffer(response);
+
+    return pubkeyOutStruct.fields.address;
+  }
+
+  async _sign(index) {
+    const signInStruct = new Struct().word64Sle('index');
+
+    signInStruct.allocate();
+    signInStruct.fields.index = index;
+
+    const response = await this._sendCommand(
+      Commands.INS_SIGN,
+      0,
+      0,
+      signInStruct.buffer()
+    );
+
+    const signOutStruct = new Struct()
+      .chars('signature', 243)
+      .word8Sle('fragmentsRemaining');
+    signOutStruct.setBuffer(response);
+
+    return {
+      signature: signOutStruct.fields.signature,
+      fragmentsRemaining: signOutStruct.fields.fragmentsRemaining
+    };
+  }
+
+  async _transaction(
+    address,
+    address_idx,
+    value,
+    tag,
+    tx_idx,
+    tx_len,
+    tx_time
+  ) {
+    const txInStruct = new Struct()
       .chars('address', 81)
       .word64Sle('address_idx')
       .word64Sle('value')
@@ -274,39 +269,33 @@ class Iota {
       .word64Sle('tx_idx')
       .word64Sle('tx_len')
       .word64Sle('tx_time');
-    txStruct.allocate();
-    var buf = txStruct.buffer();
-    var proxy = txStruct.fields;
 
-    proxy.address = address;
-    proxy.address_idx = address_idx;
-    proxy.value = value;
-    proxy.tag = tag;
-    proxy.tx_idx = tx_idx;
-    proxy.tx_len = tx_len;
-    proxy.tx_time = tx_time;
+    txInStruct.allocate();
+    const fields = txInStruct.fields;
+    fields.address = address;
+    fields.address_idx = address_idx;
+    fields.value = value;
+    fields.tag = tag;
+    fields.tx_idx = tx_idx;
+    fields.tx_len = tx_len;
+    fields.tx_time = tx_time;
 
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport
-        .send(0x80, Commands.INS_TX, 0, 0, buf)
-        .then(response => {
-          var txOutputStruct = new Struct()
-            .word8Sle('finalized')
-            .chars('bundleHash', 81);
-          txOutputStruct.allocate();
-          buf = txOutputStruct.buffer();
-          proxy = txOutputStruct.fields;
-          txOutputStruct._setBuff(response);
-          resolve({
-            bundleHash: proxy.bundleHash,
-            finalized: proxy.finalized
-          });
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
+    const response = await this._sendCommand(
+      Commands.INS_TX,
+      0,
+      0,
+      txInStruct.buffer()
+    );
+
+    const txOutStruct = new Struct()
+      .word8Sle('finalized')
+      .chars('bundleHash', 81);
+    txOutStruct.setBuffer(response);
+
+    return {
+      finalized: txOutStruct.fields.finalized,
+      bundleHash: txOutStruct.fields.bundleHash
+    };
   }
 
   async signBundleResultToFragments(index) {
@@ -315,7 +304,7 @@ class Iota {
     var signatureFragments = [];
 
     while (true) {
-      var result = await this.sign(index);
+      var result = await this._sign(index);
       signatureFragmentStr += result.signature;
       if (!result.fragmentsRemaining) {
         break;
@@ -370,7 +359,7 @@ class Iota {
     var { inputMapping, bundle } = options;
     for (var tx of bundle.bundle) {
       var index = inputMapping[tx.address] ? inputMapping[tx.address] : 0;
-      var result = await this.transaction(
+      var result = await this._transaction(
         tx.address,
         index,
         tx.value,
@@ -443,82 +432,48 @@ class Iota {
     return bundleTrytes.reverse();
   }
 
-  async _getPubKey(index) {
-    var indexStruct = new Struct().word64Sle('index');
-    indexStruct.allocate();
-    var buf = indexStruct.buffer();
-    var proxy = indexStruct.fields;
-    proxy.index = index;
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport
-        .send(0x80, Commands.INS_PUBKEY, 0, 0, buf)
-        .then(response => {
-          var addressStruct = new Struct().chars('address', 81);
-          addressStruct.allocate();
-          buf = addressStruct.buffer();
-          proxy = addressStruct.fields;
-          addressStruct._setBuff(response);
-          resolve(proxy.address);
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
-  }
-
   async _displayAddress(index) {
-    var indexStruct = new Struct().word64Sle('index');
-    indexStruct.allocate();
-    var buf = indexStruct.buffer();
-    var proxy = indexStruct.fields;
-    proxy.index = index;
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport
-        .send(0x80, Commands.INS_DISP_ADDR, 0, 0, buf)
-        .then(response => {
-          resolve(response);
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
+    const dispAddrInStruct = new Struct().word64Sle('index');
+
+    dispAddrInStruct.allocate();
+    dispAddrInStruct.fields.index = index;
+
+    await this._sendCommand(
+      Commands.INS_DISP_ADDR,
+      0,
+      0,
+      dispAddrInStruct.buffer()
+    );
   }
 
   async _readIndexes() {
-    var indexStruct = new Struct();
-    indexStruct.allocate();
-    var buf = indexStruct.buffer();
-    var proxy = indexStruct.fields;
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport
-        .send(0x80, Commands.INS_READ_INDEXES, 0, 0, buf)
-        .then(response => {
-          var indexesStruct = new Struct().array('indexes', 5, 'word64Sle');
-          indexesStruct.allocate();
-          buf = indexesStruct.buffer();
-          proxy = indexesStruct.fields;
-          indexesStruct._setBuff(response);
-          resolve(proxy.indexes);
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
+    const response = await this._sendCommand(Commands.INS_READ_INDEXES, 0, 0);
+
+    const readIndexesOutStruct = new Struct().array('indexes', 5, 'word64Sle');
+    readIndexesOutStruct.setBuffer(response);
+
+    return readIndexesOutStruct.fields.indexes;
   }
 
   async _writeIndexes(indexes) {
-    var indexStruct = new Struct().array('indexes', 5, 'word64Sle');
-    indexStruct.allocate();
-    var buf = indexStruct.buffer();
-    var proxy = indexStruct.fields;
-    proxy.indexes = indexes;
+    const writeIndexesInStruct = new Struct().array('indexes', 5, 'word64Sle');
+
+    writeIndexesInStruct.allocate();
+    writeIndexesInStruct.fields.indexes = indexes;
+
+    await this._sendCommand(
+      Commands.INS_WRITE_INDEXES,
+      0,
+      0,
+      writeIndexesInStruct.buffer()
+    );
+  }
+
+  async _sendCommand(ins, p1, p2, data) {
     var _this = this;
     return new Promise(function(resolve, reject) {
       _this.transport
-        .send(0x80, Commands.INS_WRITE_INDEXES, 0, 0, buf)
+        .send(0x80, ins, p1, p2, data)
         .then(response => {
           resolve(response);
         })
