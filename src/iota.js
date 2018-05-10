@@ -372,10 +372,25 @@ class Iota {
     return bundle;
   }
 
+  _hasDuplicateAddresses(transfers, inputs, remainder) {
+    const set = new Set();
+    transfers.forEach(t => set.add(t.address));
+    inputs.forEach(i => set.add(i.address));
+    if (remainder && set.has(remainder.address)) {
+      return true;
+    }
+
+    return set.length === transfers.length + inputs.length;
+  }
+
   async _signTransaction(transfers, inputs, remainder) {
     // remove checksums
     transfers.forEach(t => (t.address = noChecksum(t.address)));
     inputs.forEach(i => (i.address = noChecksum(i.address)));
+
+    if (this._hasDuplicateAddresses(transfers, inputs, remainder)) {
+      throw new Error('transaction must not contain duplicate addresses');
+    }
 
     // pad transfer tags
     transfers.forEach(t => (t.tag = t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG));
