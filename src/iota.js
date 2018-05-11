@@ -50,7 +50,8 @@ class Iota {
   }
 
   /**
-   * Initializes the Ledger.
+   * Initializes the Ledger with a security level an IOTA seed and based on a
+   * BIP32 path.
    *
    * @param {String} path - String representation of the 5-level BIP32 path
    * @param {Number} [security=2] - IOTA security level to use
@@ -75,15 +76,18 @@ class Iota {
 
   /**
    * Generates an address index-based.
+   * The result depends on the initalized seed and security level.
    *
    * @param {Integer} index - Index of the address
    * @param {Object} [options]
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
    * @returns {Promise<String>} Tryte-encoded address
+   * @example
+   * iota.getAddress(0, {checksum: true});
    **/
   async getAddress(index, options = {}) {
     if (!this.security) {
-      throw new Error('getAddress: setSeedInput not yet called');
+      throw new Error('Seed not yet initalized');
     }
     if (!inputValidator.isIndex(index)) {
       throw new Error('Invalid Index provided');
@@ -116,7 +120,7 @@ class Iota {
    */
   async signTransaction(transfers, inputs, remainder) {
     if (!this.security) {
-      throw new Error('signTransaction: setSeedInput not yet called');
+      throw new Error('Seed not yet initalized');
     }
     if (!inputValidator.isTransfersArray(transfers)) {
       throw new Error('Invalid transfers array provided');
@@ -168,7 +172,7 @@ class Iota {
    **/
   async displayAddress(index) {
     if (!this.security) {
-      throw new Error('displayAddress: setSeedInput not yet called');
+      throw new Error('Seed not yet initalized');
     }
     if (!inputValidator.isIndex(index)) {
       throw new Error('Invalid Index provided');
