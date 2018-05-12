@@ -50,8 +50,8 @@ class Iota {
   }
 
   /**
-   * Initializes the Ledger with a security level an IOTA seed and based on a
-   * BIP32 path.
+   * Initializes the Ledger with a security level and an IOTA seed based on a
+   * BIP44 path.
    *
    * @param {String} path - String representation of the 5-level BIP32 path
    * @param {Number} [security=2] - IOTA security level to use
@@ -75,6 +75,27 @@ class Iota {
   }
 
   /**
+   * Initializes the Ledger with a security level and an IOTA seed based on
+   * one out of 5 predefined accounts.
+   * This identical to calling setActiveSeed with the default IOTA path where
+   * level 5 corresponds to the account number. The seed indexes are only
+   * available for those 5 paths.
+   *
+   * @param {Number} account - Account number. Must be between 0 and 4.
+   * @param {Number} [security=2] - IOTA security level to use
+   * @example
+   * iota.setActiveAccount(0, 2);
+   **/
+  async setActiveAccount(account, security = 2) {
+    if (!Number.isInteger(account) || account < 0 || account >= 5) {
+      throw new Error('Invalid Account number provided');
+    }
+
+    const path = "44'/4218'/0'/0/" + account;
+    await this.setActiveSeed(path, security);
+  }
+
+  /**
    * Generates an address index-based.
    * The result depends on the initalized seed and security level.
    *
@@ -83,7 +104,7 @@ class Iota {
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
    * @returns {Promise<String>} Tryte-encoded address
    * @example
-   * iota.getAddress(0, {checksum: true});
+   * iota.getAddress(0, { checksum: true });
    **/
   async getAddress(index, options = {}) {
     if (!this.security) {
@@ -106,15 +127,15 @@ class Iota {
    * Returns an array of raw transaction data (trytes) including the signatures.
    *
    * @param {Object[]} transfers - Transfer objects
-   * @param {String} transfers[].address - Tryte-encoded address of recipient
+   * @param {String} transfers[].address - Tryte-encoded address of recipient, with or without the 9 tryte checksum
    * @param {Integer} transfers[].value - Value to be transferred
    * @param {String} transfers[].tag - Tryte-encoded tag. Maximum value is 27 trytes.
    * @param {Object[]} inputs - Inputs used for funding the transfer
-   * @param {String} inputs[].address - Tryte-encoded source address
+   * @param {String} inputs[].address - Tryte-encoded source address, with or without the 9 tryte checksum
    * @param {Integer} inputs[].balance - Balance of that input
    * @param {String} inputs[].keyIndex - Index of the address
    * @param {Object} [remainder] - Destination for sending the remainder value (of the inputs) to.
-   * @param {String} remainder.address - Tryte-encoded address
+   * @param {String} remainder.address - Tryte-encoded address, with or without the 9 tryte checksum
    * @param {Integer} remainder.keyIndex - Index of the address
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
@@ -183,6 +204,8 @@ class Iota {
 
   /**
    * Retrieves the 5 seed indexes stored on the Ledger.
+   * Each index corresponds to the index of highest remainder address used
+   * so far on the respective account.
    *
    * @returns {Promise<Integer[]>}
    **/
@@ -191,7 +214,7 @@ class Iota {
   }
 
   /**
-   * Writes 5 seed indexes to Ledger.
+   * Writes the 5 seed indexes to Ledger.
    *
    * @param {Integer[]} indexes - Seed indexes to write
    **/
@@ -202,7 +225,7 @@ class Iota {
     ) {
       throw new Error('Invalid Indexes array provided');
     }
-    if (indexes.length != 5) {
+    if (indexes.length !== 5) {
       throw new Error('Unsupported number of indexes');
     }
 
