@@ -166,7 +166,7 @@ class Iota {
 
     if (balance === payment) {
       // ignore the remainder, if there is no change
-      remainder = {};
+      remainder = undefined;
     } else if (!remainder) {
       throw new Error('Remainder object required');
     }
