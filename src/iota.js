@@ -69,6 +69,7 @@ class Iota {
     if (!inputValidator.isSecurity(security)) {
       throw new Error('Invalid security level provided');
     }
+    this.pathArray = pathArray;
     this.security = security;
 
     await this._setSeed(pathArray, security);
@@ -183,7 +184,11 @@ class Iota {
       };
     }
 
-    return await this._signTransaction(transfers, inputs, remainder);
+    const trytes = await this._signTransaction(transfers, inputs, remainder);
+
+    // resetting the bundle can only be done by setting the seed
+    await this._setSeed(this.pathArray, this.security);
+    return trytes;
   }
 
   /**
