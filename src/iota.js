@@ -177,7 +177,7 @@ class Iota {
       }
 
       remainder = {
-        address: noChecksum(remainder.address),
+        address: remainder.address,
         value: balance - payment,
         keyIndex: remainder.keyIndex
       };
@@ -414,6 +414,9 @@ class Iota {
     // remove checksums
     transfers.forEach(t => (t.address = noChecksum(t.address)));
     inputs.forEach(i => (i.address = noChecksum(i.address)));
+    if (remainder) {
+      reamainder.address = noChecksum(remainder.address);
+    }
 
     if (this._hasDuplicateAddresses(transfers, inputs, remainder)) {
       throw new Error('transaction must not contain duplicate addresses');
