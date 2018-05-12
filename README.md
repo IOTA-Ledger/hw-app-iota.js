@@ -2,21 +2,47 @@ This repository hosts the library to communicate with the Ledger Nano S IOTA app
 
 ## Examples
 
-**Basic example:**
-
+### Basic example
 ```js
 import Transport from "@ledgerhq/hw-transport-node-hid";
 // import Transport from "@ledgerhq/hw-transport-u2f"; // for browser
-import AppIota from 'hw-app-iota';
+import Iota from 'hw-app-iota';
 
 const getAddress = async () => {
   const transport = await Transport.create();
-  const hwapp = new AppIota(transport);
-  await hwapp.setActiveSeed("44'/4218'/0'/0/0");
-  return await hwapp.getAddress(0, {checksum: true});
+  const iota = new Iota(transport);
+  await iota.setActiveSeed("44'/4218'/0'/0/0");
+  return await iota.getAddress(0, {checksum: true});
 };
 
 getAddress().then(a => console.log(a));
+```
+
+### Transaction example
+```js
+import Transport from "@ledgerhq/hw-transport-node-hid";
+// import Transport from "@ledgerhq/hw-transport-u2f"; // for browser
+import Iota from 'hw-app-iota';
+
+const signTransaction = async () => {
+  const transport = await Transport.create();
+  const iota = new Iota(transport);
+  await iota.setActiveSeed("44'/4218'/0'/0/0");
+
+  const transfers = [{
+    address: 'ANADDRESS',
+    value: 10000,
+    tag: 'ATAG'
+  }];
+  const inputs = [{
+    address: 'INPUTADDRESS',
+    balance: 10000,
+    keyIndex: 4
+  }];
+  return await iota.signTransaction(transfers, inputs);
+};
+
+signTransaction().then(t => console.log(t));
 ```
 
 ## API Reference
