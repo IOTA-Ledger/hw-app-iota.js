@@ -420,7 +420,7 @@ class Iota {
     transfers.forEach(t => (t.address = noChecksum(t.address)));
     inputs.forEach(i => (i.address = noChecksum(i.address)));
     if (remainder) {
-      reamainder.address = noChecksum(remainder.address);
+      remainder.address = noChecksum(remainder.address);
     }
 
     if (this._hasDuplicateAddresses(transfers, inputs, remainder)) {
