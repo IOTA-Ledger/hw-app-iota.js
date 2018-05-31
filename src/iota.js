@@ -238,6 +238,15 @@ class Iota {
 
     await this._writeIndexes(indexes);
   }
+    
+  /**
+   * Retrieves current state flags as well as APP_MAJOR, MINOR, and PATCH versions
+   *
+   * @return {Promise<Integer[]>}
+   **/
+  async getAppConfig() {
+    return await this._getAppConfig();
+  }
 
   ///////// Private methods should not be called directly! /////////
 
