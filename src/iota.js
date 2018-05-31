@@ -14,16 +14,19 @@ import * as inputValidator from './input_validator';
  */
 
 const EMPTY_TAG = '9'.repeat(27);
-const Commands = {
-  INS_SET_SEED: 0x01,
-  INS_PUBKEY: 0x02,
-  INS_TX: 0x03,
-  INS_SIGN: 0x04,
-  INS_DISP_ADDR: 0x05,
-  INS_READ_INDEXES: 0x06,
-  INS_WRITE_INDEXES: 0x07,
-  INS_GET_APP_CONFIG: 0x08
+const Commands = {                // specific timeouts:
+  INS_SET_SEED: 0x01,             // TIMEOUT_CMD_NON_USER_INTERACTION
+  INS_PUBKEY: 0x02,               // TIMEOUT_CMD_PUBKEY
+  INS_TX: 0x03,                   // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
+  INS_SIGN: 0x04,                 // TIMEOUT_CMD_PUBKEY
+  INS_DISP_ADDR: 0x05,            // TIMEOUT_CMD_PUBKEY
+  INS_READ_INDEXES: 0x06,         // TIMEOUT_CMD_NON_USER_INTERACTION
+  INS_WRITE_INDEXES: 0x07,        // TIMEOUT_CMD_USER_INTERACTION
+  INS_GET_APP_CONFIG: 0x08        // TIMEOUT_CMD_NON_USER_INTERACTION
 };
+const TIMEOUT_CMD_PUBKEY               =  5000;
+const TIMEOUT_CMD_NON_USER_INTERACTION =  5000;
+const TIMEOUT_CMD_USER_INTERACTION     = 90000;
 
 /**
  * Class for the interaction with the Ledger IOTA application.
@@ -263,7 +266,8 @@ class Iota {
       Commands.INS_SET_SEED,
       0,
       0,
-      setSeedInStruct.buffer()
+      setSeedInStruct.buffer(),
+      TIMEOUT_CMD_NON_USER_INTERACTION
     );
   }
 
@@ -277,7 +281,8 @@ class Iota {
       Commands.INS_PUBKEY,
       0,
       0,
-      pubkeyInStruct.buffer()
+      pubkeyInStruct.buffer(),
+      TIMEOUT_CMD_PUBKEY
     );
 
     const pubkeyOutStruct = new Struct().chars('address', 81);
@@ -296,7 +301,8 @@ class Iota {
       Commands.INS_SIGN,
       0,
       0,
-      signInStruct.buffer()
+      signInStruct.buffer(),
+      TIMEOUT_CMD_PUBKEY
     );
 
     const signOutStruct = new Struct()
@@ -330,11 +336,17 @@ class Iota {
     fields.tx_len = tx_len;
     fields.time = time;
 
+    var timeout = TIMEOUT_CMD_NON_USER_INTERACTION;
+    if (tx_idx == tx_len) {
+      timeout = TIMEOUT_CMD_USER_INTERACTION;
+    };
+
     const response = await this._sendCommand(
       Commands.INS_TX,
       0,
       0,
-      txInStruct.buffer()
+      txInStruct.buffer(),
+      timeout
     );
 
     const txOutStruct = new Struct()
@@ -499,12 +511,13 @@ class Iota {
       Commands.INS_DISP_ADDR,
       0,
       0,
-      dispAddrInStruct.buffer()
+      dispAddrInStruct.buffer(),
+      TIMEOUT_CMD_PUBKEY
     );
   }
 
   async _readIndexes() {
-    const response = await this._sendCommand(Commands.INS_READ_INDEXES, 0, 0);
+    const response = await this._sendCommand(Commands.INS_READ_INDEXES, 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
     const readIndexesOutStruct = new Struct().array('indexes', 5, 'word64Sle');
     readIndexesOutStruct.setBuffer(response);
@@ -522,12 +535,13 @@ class Iota {
       Commands.INS_WRITE_INDEXES,
       0,
       0,
-      writeIndexesInStruct.buffer()
+      writeIndexesInStruct.buffer(),
+      TIMEOUT_CMD_USER_INTERACTION
     );
   }
 
   async _getAppConfig() {
-    const response = await this._sendCommand(Commands.INS_GET_APP_CONFIG, 0, 0);
+    const response = await this._sendCommand(Commands.INS_GET_APP_CONFIG, 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
     const getAppConfigOutStruct = new Struct().word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
     getAppConfigOutStruct.setBuffer(response);
@@ -540,9 +554,10 @@ class Iota {
     };
   }
 
-  async _sendCommand(ins, p1, p2, data) {
+  async _sendCommand(ins, p1, p2, data, timeout) {
     var _this = this;
     return new Promise(function(resolve, reject) {
+      _this.transport.setExchangeTimeout(timeout);
       _this.transport
         .send(0x80, ins, p1, p2, data)
         .then(response => {
