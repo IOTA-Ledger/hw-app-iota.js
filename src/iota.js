@@ -21,7 +21,8 @@ const Commands = {
   INS_SIGN: 0x04,
   INS_DISP_ADDR: 0x05,
   INS_READ_INDEXES: 0x06,
-  INS_WRITE_INDEXES: 0x07
+  INS_WRITE_INDEXES: 0x07,
+  INS_GET_APP_CONFIG: 0x08
 };
 
 /**
@@ -43,7 +44,8 @@ class Iota {
         'signTransaction',
         'displayAddress',
         'readIndexes',
-        'writeIndexes'
+        'writeIndexes',
+        'getAppConfig'
       ],
       'IOT'
     );
@@ -513,6 +515,20 @@ class Iota {
       0,
       writeIndexesInStruct.buffer()
     );
+  }
+
+  async _getAppConfig() {
+    const response = await this._sendCommand(Commands.INS_GET_APP_CONFIG, 0, 0);
+
+    const getAppConfigOutStruct = new Struct().word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
+    getAppConfigOutStruct.setBuffer(response);
+
+    return {
+      app_flags: getAppConfigOutStruct.fields.app_flags,
+      app_version_major: getAppConfigOutStruct.fields.app_version_major,
+      app_version_minor: getAppConfigOutStruct.fields.app_version_minor,
+      app_version_patch: getAppConfigOutStruct.fields.app_version_patch
+    };
   }
 
   async _sendCommand(ins, p1, p2, data) {
