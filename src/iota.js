@@ -29,6 +29,59 @@ const TIMEOUT_CMD_NON_USER_INTERACTION =  5000;
 const TIMEOUT_CMD_USER_INTERACTION     = 90000;
 
 /**
+ * Provides meaningful responses to error codes returned by IOTA Ledger app
+ * @param {Number} code - Error statusCode
+ * @returns {String} String message corresponding to error statusCode
+ */
+export function getIOTAStatusMessage(error) {
+  // no status code so must not even be communicating
+  if(error.id == "U2F_5")
+    return "Ledger device timeout. Ensure Ledger is plugged in and IOTA app is running";
+    
+  switch (error.statusCode) {
+  // improve text of most common errors
+    case 0x9000:        // SW_OK
+      return "Success";
+    case 0x6700:        // SW_INCORRECT_LENGTH
+      return "Incorrect input length";
+    case 0x6982:        // SW_SECURITY_STATUS_NOT_SATISFIED
+      return "Security not satisfied (Denied by user)";
+    case 0x6c00:        // SW_INCORRECT_LENGTH_P3
+      return "Incorrect length specified in header"
+    case 0x6d00:        // SW_INS_NOT_SUPPORTED
+      return "Invalid INS command";
+    case 0x6e00:        // SW_CLA_NOT_SUPPORTED
+      return "Incorrect CLA (First byte must be 0x80)";
+    case 0x6984:        // SW_COMMAND_INVALID_DATA
+      return "Invalid input data";
+    case 0x6985:        // SW_COMMAND_INVALID_STATE
+      return "Invalid ledger state (Command out of order(?))";
+    case 0x6986:        // SW_APP_NOT_INITIALIZED
+      return "App has not been initialized by user";
+    case 0x6991:        // SW_TX_INVALID_INDEX
+      return "Invalid transaction index";
+    case 0x6992:        // SW_TX_INVALID_ORDER
+      return "Invalid transaction order (Output, Inputs, Change)";
+    case 0x6993:        // SW_TX_INVALID_META
+      return "Invalid meta transaction";
+    case 0x6994:        // SW_TX_INVALID_OUTPUT
+      return "Invalid output transaction (Output must come first)";
+    case 0x69a1:        // SW_BUNDLE_ERROR + INSECURE HASH
+      return "Insecure hash";
+    case 0x69a2:        // SW_BUNDLE_ERROR + NON-ZERO BALANCE
+      return "Non zero balance";
+    case 0x69a3:        // SW_BUNDLE_ERROR + INVALID META TX
+      return "Invalid meta transaction";
+    case 0x69a4:        // SW_BUNDLE_ERROR + INVALID ADDRESS INDEX
+      return "Invalid input address/index pair(s)";
+    case 0x69a5:        // SW_BUNDLE_ERROR + ADDRESS REUSED
+      return "Address reused";
+    default:            // UNKNOWN ERROR CODE
+      return (error && error.message);
+    }
+}
+
+/**
  * Class for the interaction with the Ledger IOTA application.
  *
  * @example
