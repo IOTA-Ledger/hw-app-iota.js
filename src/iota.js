@@ -35,8 +35,8 @@ const TIMEOUT_CMD_USER_INTERACTION     = 90000;
  */
 export function getIOTAStatusMessage(error) {
   // no status code so must not even be communicating
-  if(!error.hasOwnProperty('statusCode'))
-    return "Ledger device not plugged in or IOTA app not running";
+  if(error.id == "U2F_5")
+    return "Ledger device timeout. Ensure Ledger is plugged in and IOTA app is running";
     
   switch (error.statusCode) {
   // improve text of most common errors
