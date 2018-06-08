@@ -24,9 +24,9 @@ const Commands = {                // specific timeouts:
   INS_WRITE_INDEXES: 0x07,        // TIMEOUT_CMD_USER_INTERACTION
   INS_GET_APP_CONFIG: 0x08        // TIMEOUT_CMD_NON_USER_INTERACTION
 };
-const TIMEOUT_CMD_PUBKEY               =  5000;
-const TIMEOUT_CMD_NON_USER_INTERACTION =  5000;
-const TIMEOUT_CMD_USER_INTERACTION     = 90000;
+const TIMEOUT_CMD_PUBKEY = 5000;
+const TIMEOUT_CMD_NON_USER_INTERACTION = 5000;
+const TIMEOUT_CMD_USER_INTERACTION = 90000;
 
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
@@ -35,8 +35,9 @@ const TIMEOUT_CMD_USER_INTERACTION     = 90000;
  */
 export function getIOTAStatusMessage(error) {
   // no status code so must not even be communicating
-  if(error.id == "U2F_5")
+  if (error.id == "U2F_5") {
     return "Ledger device timeout. Ensure Ledger is plugged in and IOTA app is running";
+  }
     
   switch (error.statusCode) {
   // improve text of most common errors
@@ -77,7 +78,7 @@ export function getIOTAStatusMessage(error) {
     case 0x69a5:        // SW_BUNDLE_ERROR + ADDRESS REUSED
       return "Address reused";
     default:            // UNKNOWN ERROR CODE
-      return (error && error.message);
+      return error.message;
     }
 }
 
