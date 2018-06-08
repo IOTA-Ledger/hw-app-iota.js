@@ -13,7 +13,7 @@ import * as inputValidator from './input_validator';
  * @module hw-app-iota
  */
 
-const CLA = 0x80;
+const CLA = 0x7A;
 const Commands = {                // specific timeouts:
   INS_SET_SEED: 0x01,             // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_PUBKEY: 0x02,               // TIMEOUT_CMD_PUBKEY
