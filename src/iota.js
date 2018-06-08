@@ -13,7 +13,7 @@ import * as inputValidator from './input_validator';
  * @module hw-app-iota
  */
 
-const EMPTY_TAG = '9'.repeat(27);
+const CLA = 0x80;
 const Commands = {                // specific timeouts:
   INS_SET_SEED: 0x01,             // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_PUBKEY: 0x02,               // TIMEOUT_CMD_PUBKEY
@@ -28,6 +28,8 @@ const TIMEOUT_CMD_PUBKEY = 5000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 5000;
 const TIMEOUT_CMD_USER_INTERACTION = 90000;
 
+const EMPTY_TAG = '9'.repeat(27);
+
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
  * @param {Number} code - Error statusCode
@@ -38,9 +40,9 @@ export function getIOTAStatusMessage(error) {
   if (error.id == "U2F_5") {
     return "Ledger device timeout. Ensure Ledger is plugged in and IOTA app is running";
   }
-    
+
   switch (error.statusCode) {
-  // improve text of most common errors
+    // improve text of most common errors
     case 0x9000:        // SW_OK
       return "Success";
     case 0x6700:        // SW_INCORRECT_LENGTH
@@ -79,7 +81,7 @@ export function getIOTAStatusMessage(error) {
       return "Address reused";
     default:            // UNKNOWN ERROR CODE
       return error.message;
-    }
+  }
 }
 
 /**
@@ -295,7 +297,7 @@ class Iota {
 
     await this._writeIndexes(indexes);
   }
-    
+
   /**
    * Retrieves current state flags as well as APP_MAJOR, MINOR, and PATCH versions
    *
@@ -613,7 +615,7 @@ class Iota {
 
     try {
       transport.setExchangeTimeout(timeout);
-      await transport.send(0x80, ins, p1, p2, data);
+      await transport.send(CLA, ins, p1, p2, data);
     } catch (error) {
       // set the message according to the status code
       error.message = getIOTAStatusMessage(error);
