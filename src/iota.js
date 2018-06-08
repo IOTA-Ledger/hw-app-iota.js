@@ -618,7 +618,13 @@ class Iota {
       return await transport.send(CLA, ins, p1, p2, data);
     } catch (error) {
       // set the message according to the status code
-      error.message = getIOTAStatusMessage(error);
+      const smsg = getIOTAStatusMessage(error);
+      error.message = `Ledger device: ${smsg}`
+      if (error.statusCode) {
+        // add hex status code if present
+        const statusCodeStr = error.statusCode.toString(16);
+        error.message += ` (0x${statusCodeStr})`;
+      }
       throw error;
     }
   }
