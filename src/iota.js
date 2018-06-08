@@ -13,7 +13,7 @@ import * as inputValidator from './input_validator';
  * @module hw-app-iota
  */
 
-const EMPTY_TAG = '9'.repeat(27);
+const CLA = 0x80;
 const Commands = {                // specific timeouts:
   INS_SET_SEED: 0x01,             // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_PUBKEY: 0x02,               // TIMEOUT_CMD_PUBKEY
@@ -24,9 +24,11 @@ const Commands = {                // specific timeouts:
   INS_WRITE_INDEXES: 0x07,        // TIMEOUT_CMD_USER_INTERACTION
   INS_GET_APP_CONFIG: 0x08        // TIMEOUT_CMD_NON_USER_INTERACTION
 };
-const TIMEOUT_CMD_PUBKEY               =  5000;
-const TIMEOUT_CMD_NON_USER_INTERACTION =  5000;
-const TIMEOUT_CMD_USER_INTERACTION     = 90000;
+const TIMEOUT_CMD_PUBKEY = 5000;
+const TIMEOUT_CMD_NON_USER_INTERACTION = 5000;
+const TIMEOUT_CMD_USER_INTERACTION = 90000;
+
+const EMPTY_TAG = '9'.repeat(27);
 
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
@@ -35,11 +37,12 @@ const TIMEOUT_CMD_USER_INTERACTION     = 90000;
  */
 export function getIOTAStatusMessage(error) {
   // no status code so must not even be communicating
-  if(error.id == "U2F_5")
+  if (error.id == "U2F_5") {
     return "Ledger device timeout. Ensure Ledger is plugged in and IOTA app is running";
-    
+  }
+
   switch (error.statusCode) {
-  // improve text of most common errors
+    // improve text of most common errors
     case 0x9000:        // SW_OK
       return "Success";
     case 0x6700:        // SW_INCORRECT_LENGTH
@@ -77,8 +80,8 @@ export function getIOTAStatusMessage(error) {
     case 0x69a5:        // SW_BUNDLE_ERROR + ADDRESS REUSED
       return "Address reused";
     default:            // UNKNOWN ERROR CODE
-      return (error && error.message);
-    }
+      return error.message;
+  }
 }
 
 /**
@@ -294,7 +297,7 @@ class Iota {
 
     await this._writeIndexes(indexes);
   }
-    
+
   /**
    * Retrieves current state flags as well as APP_MAJOR, MINOR, and PATCH versions
    *
@@ -608,18 +611,22 @@ class Iota {
   }
 
   async _sendCommand(ins, p1, p2, data, timeout) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport.setExchangeTimeout(timeout);
-      _this.transport
-        .send(0x80, ins, p1, p2, data)
-        .then(response => {
-          resolve(response);
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
+    const transport = this.transport;
+
+    try {
+      transport.setExchangeTimeout(timeout);
+      return await transport.send(CLA, ins, p1, p2, data);
+    } catch (error) {
+      // set the message according to the status code
+      const smsg = getIOTAStatusMessage(error);
+      error.message = `Ledger device: ${smsg}`
+      if (error.statusCode) {
+        // add hex status code if present
+        const statusCodeStr = error.statusCode.toString(16);
+        error.message += ` (0x${statusCodeStr})`;
+      }
+      throw error;
+    }
   }
 }
 
