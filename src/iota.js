@@ -609,18 +609,16 @@ class Iota {
   }
 
   async _sendCommand(ins, p1, p2, data, timeout) {
-    var _this = this;
-    return new Promise(function(resolve, reject) {
-      _this.transport.setExchangeTimeout(timeout);
-      _this.transport
-        .send(0x80, ins, p1, p2, data)
-        .then(response => {
-          resolve(response);
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
+    const { transport } = this.transport;
+
+    try {
+      transport.setExchangeTimeout(timeout);
+      await transport.send(0x80, ins, p1, p2, data);
+    } catch (error) {
+      // set the message according to the status code
+      error.message = getIOTAStatusMessage(error);
+      throw error;
+    }
   }
 }
 
