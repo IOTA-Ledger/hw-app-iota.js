@@ -611,11 +611,11 @@ class Iota {
   }
 
   async _sendCommand(ins, p1, p2, data, timeout) {
-    const { transport } = this.transport;
+    const transport = this.transport;
 
     try {
       transport.setExchangeTimeout(timeout);
-      await transport.send(CLA, ins, p1, p2, data);
+      return await transport.send(CLA, ins, p1, p2, data);
     } catch (error) {
       // set the message according to the status code
       error.message = getIOTAStatusMessage(error);
