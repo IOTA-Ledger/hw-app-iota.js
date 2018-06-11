@@ -33,10 +33,10 @@ const EMPTY_TAG = '9'.repeat(27);
 
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
- * @param {Number} code - Error statusCode
+ * @param {Object} error - Error statusCode
  * @returns {String} String message corresponding to error statusCode
  */
-export function getIOTAStatusMessage(error) {
+function getIOTAStatusMessage(error) {
   // no status code so must not even be communicating
   if (error.id == 'U2F_5') {
     return 'Ledger device timeout. Ensure Ledger is plugged in and IOTA app is running';
