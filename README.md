@@ -56,8 +56,6 @@ Class for the interaction with the Ledger IOTA application.
     * [.getAddress(index, [options])](#module_hw-app-iota..Iota+getAddress) ⇒ <code>Promise.&lt;String&gt;</code>
     * [.signTransaction(transfers, inputs, [remainder])](#module_hw-app-iota..Iota+signTransaction) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
     * [.displayAddress(index)](#module_hw-app-iota..Iota+displayAddress)
-    * [.readIndexes()](#module_hw-app-iota..Iota+readIndexes) ⇒ <code>Promise.&lt;Array.&lt;Integer&gt;&gt;</code>
-    * [.writeIndexes(indexes)](#module_hw-app-iota..Iota+writeIndexes)
 
 <a name="module_hw-app-iota..Iota+setActiveSeed"></a>
 
@@ -139,19 +137,3 @@ Displays address on Ledger to verify it belongs to ledger seed.
 | Param | Type | Description |
 | --- | --- | --- |
 | index | <code>Integer</code> | Index of the address |
-
-<a name="module_hw-app-iota..Iota+readIndexes"></a>
-
-#### iota.readIndexes() ⇒ <code>Promise.&lt;Array.&lt;Integer&gt;&gt;</code>
-Retrieves the 5 seed indexes stored on the Ledger.
-Each index corresponds to the index of highest remainder address used
-so far on the respective account.
-
-<a name="module_hw-app-iota..Iota+writeIndexes"></a>
-
-#### iota.writeIndexes(indexes)
-Writes the 5 seed indexes to Ledger.
-
-| Param | Type | Description |
-| --- | --- | --- |
-| indexes | <code>Array.&lt;Integer&gt;</code> | Seed indexes to write |
