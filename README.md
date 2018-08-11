@@ -117,4 +117,4 @@ Returns an array of raw transaction data (trytes) including the signatures.
 Retrieves information about the installed application.
 
 **Kind**: instance method of [<code>Iota</code>](#module_hw-app-iota..Iota)  
-**Returns**: <code>Promise.&lt;String&gt;</code> - Semantic Version, i.e. MAJOR.MINOR.PATCH
+**Returns**: <code>Promise.&lt;{Integer, String}&gt;</code> - Flags, Semantic Version String (i.e. MAJOR.MINOR.PATCH)
