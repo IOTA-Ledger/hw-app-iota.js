@@ -52,10 +52,9 @@ Class for the interaction with the Ledger IOTA application.
 
 * [~Iota](#module_hw-app-iota..Iota)
     * [.setActiveSeed(path, [security])](#module_hw-app-iota..Iota+setActiveSeed)
-    * [.setActiveAccount(account, [security])](#module_hw-app-iota..Iota+setActiveAccount)
     * [.getAddress(index, [options])](#module_hw-app-iota..Iota+getAddress) ⇒ <code>Promise.&lt;String&gt;</code>
     * [.signTransaction(transfers, inputs, [remainder])](#module_hw-app-iota..Iota+signTransaction) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
-    * [.displayAddress(index)](#module_hw-app-iota..Iota+displayAddress)
+    * [.getAppConfiguration()](#module_hw-app-iota..Iota+getAppConfiguration) ⇒ <code>Promise.&lt;String&gt;</code>
 
 <a name="module_hw-app-iota..Iota+setActiveSeed"></a>
 
@@ -111,3 +110,11 @@ Returns an array of raw transaction data (trytes) including the signatures.
 | [remainder] | <code>Object</code> | Destination for sending the remainder value (of the inputs) to. |
 | remainder.address | <code>String</code> | Tryte-encoded address, with or without the 9 tryte checksum |
 | remainder.keyIndex | <code>Integer</code> | Index of the address |
+
+<a name="module_hw-app-iota..Iota+getAppConfiguration"></a>
+
+#### iota.getAppConfiguration() ⇒ <code>Promise.&lt;String&gt;</code>
+Retrieves information about the installed application.
+
+**Kind**: instance method of [<code>Iota</code>](#module_hw-app-iota..Iota)  
+**Returns**: <code>Promise.&lt;String&gt;</code> - Semantic Version, i.e. MAJOR.MINOR.PATCH
