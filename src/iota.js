@@ -101,7 +101,6 @@ class Iota {
         'setActiveSeed',
         'getAddress',
         'signTransaction',
-        'displayAddress',
         'getAppConfig'
       ],
       'IOT'
@@ -141,6 +140,7 @@ class Iota {
    * @param {Integer} index - Index of the address
    * @param {Object} [options]
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
+   * @param {Boolean} [options.display=false] - Display generated address on display
    * @returns {Promise<String>} Tryte-encoded address
    * @example
    * iota.getAddress(0, { checksum: true });
@@ -153,8 +153,9 @@ class Iota {
       throw new Error('Invalid Index provided');
     }
     options.checksum = options.checksum || false;
+    options.display = options.display || false;
 
-    var address = await this._publicKey(index);
+    var address = await this._publicKey(index, options.display);
     if (options.checksum) {
       address = addChecksum(address);
     }
@@ -274,7 +275,7 @@ class Iota {
     );
   }
 
-  async _publicKey(index) {
+  async _publicKey(index, display) {
     const pubkeyInStruct = new Struct().word64Sle('index');
 
     pubkeyInStruct.allocate();
@@ -282,7 +283,7 @@ class Iota {
 
     const response = await this._sendCommand(
       Commands.INS_PUBKEY,
-      0,
+      display ? 0x01 : 0x00,
       0,
       pubkeyInStruct.buffer(),
       TIMEOUT_CMD_PUBKEY

@@ -85,6 +85,7 @@ The result depends on the initalized seed and security level.
 | index | <code>Integer</code> |  | Index of the address |
 | [options] | <code>Object</code> |  |  |
 | [options.checksum] | <code>Boolean</code> | <code>false</code> | Append 9 tryte checksum |
+| [options.display] | <code>Boolean</code> | <code>false</code> | Display generated address on display |
 
 **Example**  
 ```js
@@ -110,12 +111,3 @@ Returns an array of raw transaction data (trytes) including the signatures.
 | [remainder] | <code>Object</code> | Destination for sending the remainder value (of the inputs) to. |
 | remainder.address | <code>String</code> | Tryte-encoded address, with or without the 9 tryte checksum |
 | remainder.keyIndex | <code>Integer</code> | Index of the address |
-
-<a name="module_hw-app-iota..Iota+displayAddress"></a>
-
-#### iota.displayAddress(index)
-Displays address on Ledger to verify it belongs to ledger seed.
-
-| Param | Type | Description |
-| --- | --- | --- |
-| index | <code>Integer</code> | Index of the address |
