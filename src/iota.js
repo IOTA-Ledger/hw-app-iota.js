@@ -21,9 +21,7 @@ const Commands = {
   INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
   INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
   INS_DISP_ADDR: 0x05, // TIMEOUT_CMD_PUBKEY
-  INS_READ_INDEXES: 0x06, // TIMEOUT_CMD_NON_USER_INTERACTION
-  INS_WRITE_INDEXES: 0x07, // TIMEOUT_CMD_USER_INTERACTION
-  INS_GET_APP_CONFIG: 0x08 // TIMEOUT_CMD_NON_USER_INTERACTION
+  INS_GET_APP_CONFIG: 0x06 // TIMEOUT_CMD_NON_USER_INTERACTION
 };
 const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
@@ -104,8 +102,6 @@ class Iota {
         'getAddress',
         'signTransaction',
         'displayAddress',
-        'readIndexes',
-        'writeIndexes',
         'getAppConfig'
       ],
       'IOT'
@@ -136,27 +132,6 @@ class Iota {
     this.security = security;
 
     await this._setSeed(pathArray, security);
-  }
-
-  /**
-   * Initializes the Ledger with a security level and an IOTA seed based on
-   * one out of 5 predefined accounts.
-   * This identical to calling setActiveSeed with the default IOTA path where
-   * level 5 corresponds to the account number. The seed indexes are only
-   * available for those 5 paths.
-   *
-   * @param {Number} account - Account number. Must be between 0 and 4.
-   * @param {Number} [security=2] - IOTA security level to use
-   * @example
-   * iota.setActiveAccount(0, 2);
-   **/
-  async setActiveAccount(account, security = 2) {
-    if (!Number.isInteger(account) || account < 0 || account >= 5) {
-      throw new Error('Invalid Account number provided');
-    }
-
-    const path = "44'/4218'/0'/0/" + account;
-    await this.setActiveSeed(path, security);
   }
 
   /**
@@ -268,36 +243,6 @@ class Iota {
     }
 
     await this._displayAddress(index);
-  }
-
-  /**
-   * Retrieves the 5 seed indexes stored on the Ledger.
-   * Each index corresponds to the index of highest remainder address used
-   * so far on the respective account.
-   *
-   * @returns {Promise<Integer[]>}
-   **/
-  async readIndexes() {
-    return await this._readIndexes();
-  }
-
-  /**
-   * Writes the 5 seed indexes to Ledger.
-   *
-   * @param {Integer[]} indexes - Seed indexes to write
-   **/
-  async writeIndexes(indexes) {
-    if (
-      !inputValidator.isArray(indexes) ||
-      !indexes.every(inputValidator.isIndex)
-    ) {
-      throw new Error('Invalid Indexes array provided');
-    }
-    if (indexes.length !== 5) {
-      throw new Error('Unsupported number of indexes');
-    }
-
-    await this._writeIndexes(indexes);
   }
 
   /**
@@ -571,36 +516,6 @@ class Iota {
       0,
       dispAddrInStruct.buffer(),
       TIMEOUT_CMD_PUBKEY
-    );
-  }
-
-  async _readIndexes() {
-    const response = await this._sendCommand(
-      Commands.INS_READ_INDEXES,
-      0,
-      0,
-      undefined,
-      TIMEOUT_CMD_NON_USER_INTERACTION
-    );
-
-    const readIndexesOutStruct = new Struct().array('indexes', 5, 'word64Sle');
-    readIndexesOutStruct.setBuffer(response);
-
-    return readIndexesOutStruct.fields.indexes;
-  }
-
-  async _writeIndexes(indexes) {
-    const writeIndexesInStruct = new Struct().array('indexes', 5, 'word64Sle');
-
-    writeIndexesInStruct.allocate();
-    writeIndexesInStruct.fields.indexes = indexes;
-
-    await this._sendCommand(
-      Commands.INS_WRITE_INDEXES,
-      0,
-      0,
-      writeIndexesInStruct.buffer(),
-      TIMEOUT_CMD_USER_INTERACTION
     );
   }
 

@@ -56,8 +56,6 @@ Class for the interaction with the Ledger IOTA application.
     * [.getAddress(index, [options])](#module_hw-app-iota..Iota+getAddress) ⇒ <code>Promise.&lt;String&gt;</code>
     * [.signTransaction(transfers, inputs, [remainder])](#module_hw-app-iota..Iota+signTransaction) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
     * [.displayAddress(index)](#module_hw-app-iota..Iota+displayAddress)
-    * [.readIndexes()](#module_hw-app-iota..Iota+readIndexes) ⇒ <code>Promise.&lt;Array.&lt;Integer&gt;&gt;</code>
-    * [.writeIndexes(indexes)](#module_hw-app-iota..Iota+writeIndexes)
 
 <a name="module_hw-app-iota..Iota+setActiveSeed"></a>
 
@@ -73,24 +71,6 @@ BIP44 path.
 **Example**  
 ```js
 iota.setActiveSeed("44'/4218'/0'/0/0", 2);
-```
-<a name="module_hw-app-iota..Iota+setActiveAccount"></a>
-
-#### iota.setActiveAccount(account, [security])
-Initializes the Ledger with a security level and an IOTA seed based on
-one out of 5 predefined accounts.
-This identical to calling setActiveSeed with the default IOTA path where
-level 5 corresponds to the account number. The seed indexes are only
-available for those 5 paths.
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| account | <code>Number</code> |  | Account number. Must be between 0 and 4. |
-| [security] | <code>Number</code> | <code>2</code> | IOTA security level to use |
-
-**Example**  
-```js
-iota.setActiveAccount(0, 2);
 ```
 <a name="module_hw-app-iota..Iota+getAddress"></a>
 
@@ -139,19 +119,3 @@ Displays address on Ledger to verify it belongs to ledger seed.
 | Param | Type | Description |
 | --- | --- | --- |
 | index | <code>Integer</code> | Index of the address |
-
-<a name="module_hw-app-iota..Iota+readIndexes"></a>
-
-#### iota.readIndexes() ⇒ <code>Promise.&lt;Array.&lt;Integer&gt;&gt;</code>
-Retrieves the 5 seed indexes stored on the Ledger.
-Each index corresponds to the index of highest remainder address used
-so far on the respective account.
-
-<a name="module_hw-app-iota..Iota+writeIndexes"></a>
-
-#### iota.writeIndexes(indexes)
-Writes the 5 seed indexes to Ledger.
-
-| Param | Type | Description |
-| --- | --- | --- |
-| indexes | <code>Array.&lt;Integer&gt;</code> | Seed indexes to write |
