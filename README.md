@@ -72,24 +72,6 @@ BIP44 path.
 ```js
 iota.setActiveSeed("44'/4218'/0'/0/0", 2);
 ```
-<a name="module_hw-app-iota..Iota+setActiveAccount"></a>
-
-#### iota.setActiveAccount(account, [security])
-Initializes the Ledger with a security level and an IOTA seed based on
-one out of 5 predefined accounts.
-This identical to calling setActiveSeed with the default IOTA path where
-level 5 corresponds to the account number. The seed indexes are only
-available for those 5 paths.
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| account | <code>Number</code> |  | Account number. Must be between 0 and 4. |
-| [security] | <code>Number</code> | <code>2</code> | IOTA security level to use |
-
-**Example**  
-```js
-iota.setActiveAccount(0, 2);
-```
 <a name="module_hw-app-iota..Iota+getAddress"></a>
 
 #### iota.getAddress(index, [options]) ⇒ <code>Promise.&lt;String&gt;</code>

@@ -135,27 +135,6 @@ class Iota {
   }
 
   /**
-   * Initializes the Ledger with a security level and an IOTA seed based on
-   * one out of 5 predefined accounts.
-   * This identical to calling setActiveSeed with the default IOTA path where
-   * level 5 corresponds to the account number. The seed indexes are only
-   * available for those 5 paths.
-   *
-   * @param {Number} account - Account number. Must be between 0 and 4.
-   * @param {Number} [security=2] - IOTA security level to use
-   * @example
-   * iota.setActiveAccount(0, 2);
-   **/
-  async setActiveAccount(account, security = 2) {
-    if (!Number.isInteger(account) || account < 0 || account >= 5) {
-      throw new Error('Invalid Account number provided');
-    }
-
-    const path = "44'/4218'/0'/0/" + account;
-    await this.setActiveSeed(path, security);
-  }
-
-  /**
    * Generates an address index-based.
    * The result depends on the initalized seed and security level.
    *
