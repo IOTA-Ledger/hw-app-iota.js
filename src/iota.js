@@ -97,12 +97,7 @@ class Iota {
     this.security = 0;
     transport.decorateAppAPIMethods(
       this,
-      [
-        'setActiveSeed',
-        'getAddress',
-        'signTransaction',
-        'getAppConfig'
-      ],
+      ['setActiveSeed', 'getAddress', 'signTransaction', 'getAppConfig'],
       'IOT'
     );
   }
@@ -231,28 +226,22 @@ class Iota {
   }
 
   /**
-   * Displays address on Ledger to verify it belongs to ledger seed.
+   * Retrieves information about the installed application.
    *
-   * @param {Integer} index - Index of the address
+   * @returns {Promise<{Integer, String}>} Flags, Semantic Version String (i.e. MAJOR.MINOR.PATCH)
    **/
-  async displayAddress(index) {
-    if (!this.security) {
-      throw new Error('Seed not yet initalized');
-    }
-    if (!inputValidator.isIndex(index)) {
-      throw new Error('Invalid Index provided');
-    }
-
-    await this._displayAddress(index);
-  }
-
-  /**
-   * Retrieves current state flags as well as APP_MAJOR, MINOR, and PATCH versions
-   *
-   * @return {Promise<Integer[]>}
-   **/
-  async getAppConfig() {
-    return await this._getAppConfig();
+  async getAppConfiguration() {
+    const config = await this._getAppConfig();
+    return {
+      flags: config.app_flags,
+      version:
+        '' +
+        config.app_version_major +
+        '.' +
+        config.app_version_minor +
+        '.' +
+        config.app_version_patch
+    };
   }
 
   ///////// Private methods should not be called directly! /////////
