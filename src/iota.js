@@ -21,7 +21,8 @@ const Commands = {
   INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
   INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
   INS_DISP_ADDR: 0x05, // TIMEOUT_CMD_PUBKEY
-  INS_GET_APP_CONFIG: 0x10 // TIMEOUT_CMD_NON_USER_INTERACTION
+  INS_GET_APP_CONFIG: 0x10, // TIMEOUT_CMD_NON_USER_INTERACTION
+  INS_RESET: 0xff // TIMEOUT_CMD_NON_USER_INTERACTION
 };
 const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
@@ -219,9 +220,9 @@ class Iota {
     }
 
     const trytes = await this._signTransaction(transfers, inputs, remainder);
+    // reset the bundle
+    await this._reset(true);
 
-    // resetting the bundle can only be done by setting the seed
-    await this._setSeed(this.pathArray, this.security);
     return trytes;
   }
 
@@ -531,6 +532,16 @@ class Iota {
       app_version_minor: getAppConfigOutStruct.fields.app_version_minor,
       app_version_patch: getAppConfigOutStruct.fields.app_version_patch
     };
+  }
+
+  async _reset(partial = false) {
+    await this._sendCommand(
+      Commands.INS_RESET,
+      partial ? 1 : 0,
+      0,
+      undefined,
+      TIMEOUT_CMD_NON_USER_INTERACTION
+    );
   }
 
   async _sendCommand(ins, p1, p2, data, timeout) {
