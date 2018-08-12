@@ -54,7 +54,7 @@ Class for the interaction with the Ledger IOTA application.
     * [.setActiveSeed(path, [security])](#module_hw-app-iota..Iota+setActiveSeed)
     * [.getAddress(index, [options])](#module_hw-app-iota..Iota+getAddress) ⇒ <code>Promise.&lt;String&gt;</code>
     * [.signTransaction(transfers, inputs, [remainder])](#module_hw-app-iota..Iota+signTransaction) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
-    * [.getAppConfiguration()](#module_hw-app-iota..Iota+getAppConfiguration) ⇒ <code>Promise.&lt;String&gt;</code>
+    * [.getAppVersion()](#module_hw-app-iota..Iota+getAppVersion) ⇒ <code>Promise.&lt;String&gt;</code>
 
 <a name="module_hw-app-iota..Iota+setActiveSeed"></a>
 
@@ -111,10 +111,10 @@ Returns an array of raw transaction data (trytes) including the signatures.
 | remainder.address | <code>String</code> | Tryte-encoded address, with or without the 9 tryte checksum |
 | remainder.keyIndex | <code>Integer</code> | Index of the address |
 
-<a name="module_hw-app-iota..Iota+getAppConfiguration"></a>
+<a name="module_hw-app-iota..Iota+getAppVersion"></a>
 
-#### iota.getAppConfiguration() ⇒ <code>Promise.&lt;String&gt;</code>
-Retrieves information about the installed application.
+#### iota.getAppVersion() ⇒ <code>Promise.&lt;String&gt;</code>
+Retrieves version information about the installed application.
 
 **Kind**: instance method of [<code>Iota</code>](#module_hw-app-iota..Iota)  
-**Returns**: <code>Promise.&lt;{Integer, String}&gt;</code> - Flags, Semantic Version String (i.e. MAJOR.MINOR.PATCH)
+**Returns**: <code>Promise.&lt;String&gt;</code> - Semantic Version string (i.e. MAJOR.MINOR.PATCH)  

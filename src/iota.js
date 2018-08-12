@@ -98,7 +98,7 @@ class Iota {
     this.security = 0;
     transport.decorateAppAPIMethods(
       this,
-      ['setActiveSeed', 'getAddress', 'signTransaction', 'getAppConfig'],
+      ['setActiveSeed', 'getAddress', 'signTransaction', 'getAppVersion'],
       'IOT'
     );
   }
@@ -227,22 +227,20 @@ class Iota {
   }
 
   /**
-   * Retrieves information about the installed application.
+   * Retrieves version information about the installed application.
    *
-   * @returns {Promise<{Integer, String}>} Flags, Semantic Version String (i.e. MAJOR.MINOR.PATCH)
+   * @returns {Promise<String>} Semantic Version string (i.e. MAJOR.MINOR.PATCH)
    **/
-  async getAppConfiguration() {
+  async getAppVersion() {
     const config = await this._getAppConfig();
-    return {
-      flags: config.app_flags,
-      version:
-        '' +
-        config.app_version_major +
-        '.' +
-        config.app_version_minor +
-        '.' +
-        config.app_version_patch
-    };
+    return (
+      '' +
+      config.app_version_major +
+      '.' +
+      config.app_version_minor +
+      '.' +
+      config.app_version_patch
+    );
   }
 
   ///////// Private methods should not be called directly! /////////
