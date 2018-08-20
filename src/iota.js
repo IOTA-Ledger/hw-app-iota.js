@@ -117,7 +117,7 @@ class Iota {
       throw new Error('Invalid BIP44 path string');
     }
     const pathArray = bippath.fromString(path).toPathArray();
-    if (!pathArray || pathArray.length !== 5) {
+    if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
       throw new Error('Invalid BIP44 path length');
     }
     if (!inputValidator.isSecurity(security)) {
@@ -247,12 +247,14 @@ class Iota {
 
   async _setSeed(pathArray, security) {
     const setSeedInStruct = new Struct()
-      .array('pathArray', 5, 'word64Sle')
-      .word64Sle('security');
+      .word64Sle('security')
+      .word64Sle('pathLength')
+      .array('pathArray', pathArray.length, 'word64Sle');
 
     setSeedInStruct.allocate();
-    setSeedInStruct.fields.pathArray = pathArray;
     setSeedInStruct.fields.security = security;
+    setSeedInStruct.fields.pathLength = pathArray.length;
+    setSeedInStruct.fields.pathArray = pathArray;
 
     await this._sendCommand(
       Commands.INS_SET_SEED,
