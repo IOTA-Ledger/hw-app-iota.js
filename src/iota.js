@@ -105,7 +105,7 @@ class Iota {
 
   /**
    * Initializes the Ledger with a security level and an IOTA seed based on a
-   * BIP44 path.
+   * BIP32 path.
    *
    * @param {String} path - String representation of the 5-level BIP32 path
    * @param {Number} [security=2] - IOTA security level to use
@@ -114,11 +114,11 @@ class Iota {
    **/
   async setActiveSeed(path, security = 2) {
     if (!bippath.validateString(path)) {
-      throw new Error('Invalid BIP44 path string');
+      throw new Error('Invalid BIP32 path string');
     }
     const pathArray = bippath.fromString(path).toPathArray();
     if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
-      throw new Error('Invalid BIP44 path length');
+      throw new Error('Invalid BIP32 path length');
     }
     if (!inputValidator.isSecurity(security)) {
       throw new Error('Invalid security level provided');

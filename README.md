@@ -60,7 +60,7 @@ Class for the interaction with the Ledger IOTA application.
 
 #### iota.setActiveSeed(path, [security])
 Initializes the Ledger with a security level and an IOTA seed based on a
-BIP44 path.
+BIP32 path.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
