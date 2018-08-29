@@ -1,12 +1,14 @@
-import Struct from 'struct';
-import Bundle from 'iota.lib.js/lib/crypto/bundle/bundle';
-import {
-  addChecksum,
-  noChecksum,
-  transactionTrytes
-} from 'iota.lib.js/lib/utils/utils';
 import bippath from 'bip32-path';
-import * as inputValidator from './input_validator';
+import Struct from 'struct';
+import { addEntry, finalizeBundle, addTrytes } from '@iota/bundle';
+import { addChecksum, removeChecksum } from '@iota/checksum';
+import { asFinalTransactionTrytes } from '@iota/transaction-converter';
+import {
+  validate,
+  securityLevelValidator,
+  arrayValidator,
+  transferValidator
+} from '@iota/validators';
 
 /**
  * IOTA API
@@ -27,8 +29,6 @@ const Commands = {
 const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
-
-const EMPTY_TAG = '9'.repeat(27);
 
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
@@ -120,9 +120,8 @@ class Iota {
     if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
       throw new Error('Invalid BIP32 path length');
     }
-    if (!inputValidator.isSecurity(security)) {
-      throw new Error('Invalid security level provided');
-    }
+    validate(securityLevelValidator(security));
+
     this.pathArray = pathArray;
     this.security = security;
 
@@ -145,9 +144,7 @@ class Iota {
     if (!this.security) {
       throw new Error('Seed not yet initalized');
     }
-    if (!inputValidator.isIndex(index)) {
-      throw new Error('Invalid Index provided');
-    }
+
     options.checksum = options.checksum || false;
     options.display = options.display || false;
 
@@ -179,12 +176,7 @@ class Iota {
     if (!this.security) {
       throw new Error('Seed not yet initalized');
     }
-    if (!inputValidator.isTransfersArray(transfers)) {
-      throw new Error('Invalid transfers array provided');
-    }
-    if (!inputValidator.isInputsArray(inputs)) {
-      throw new Error('Invalid inputs array provided');
-    }
+    validate(arrayValidator(transferValidator)(transfers));
 
     // filter unnecessary inputs
     inputs = inputs.filter(input => input.balance > 0);
@@ -208,10 +200,6 @@ class Iota {
     }
 
     if (remainder) {
-      if (!inputValidator.isRemainderObject(remainder)) {
-        throw new Error('Invalid remainder object provided');
-      }
-
       remainder = {
         address: remainder.address,
         value: balance - payment,
@@ -369,35 +357,23 @@ class Iota {
     return signature.match(/.{2187}/g);
   }
 
-  async _addSignatureFragmentsToBundle(bundle) {
-    for (var i = 0; i < bundle.bundle.length; i++) {
-      // only sign inputs
-      if (bundle.bundle[i].value >= 0) {
-        continue;
-      }
+  async _addSignatureFragmentsToBundle(bundle, inputs) {
+    const { security } = this;
+    const inputOffset = bundle.findIndex(({ value }) => value < 0);
 
-      const address = bundle.bundle[i].address;
-      const signatureFragments = await this._getSignatureFragments(i);
-
-      bundle.bundle[i].signatureMessageFragment = signatureFragments.shift();
-
-      // set the signature fragments for all successive meta transactions
-      for (var j = 1; j < this.security; j++) {
-        if (++i >= bundle.bundle.length) {
-          return;
-        }
-
-        const tx = bundle.bundle[i];
-        if (tx.address === address && tx.value === 0) {
-          tx.signatureMessageFragment = signatureFragments.shift();
-        }
-      }
+    var fragments = [];
+    for (var i = 0; i < inputs.length; i++) {
+      fragments = fragments.concat(
+        await this._getSignatureFragments(inputOffset + security * i)
+      );
     }
+
+    return addTrytes(bundle, fragments, inputOffset);
   }
 
-  async _signBundle(bundle, addressKeyIndices) {
+  async _signBundle(bundle, inputs, addressKeyIndices) {
     var finalized = false;
-    for (const tx of bundle.bundle) {
+    for (const tx of bundle) {
       const keyIndex = addressKeyIndices[tx.address]
         ? addressKeyIndices[tx.address]
         : 0;
@@ -412,13 +388,11 @@ class Iota {
       );
       finalized = result.finalized;
     }
-
     if (!finalized) {
       throw new Error('Bundle not finalized');
     }
 
-    await this._addSignatureFragmentsToBundle(bundle);
-    return bundle;
+    return await this._addSignatureFragmentsToBundle(bundle, inputs);
   }
 
   _hasDuplicateAddresses(transfers, inputs, remainder) {
@@ -434,65 +408,61 @@ class Iota {
 
   async _signTransaction(transfers, inputs, remainder) {
     // remove checksums
-    transfers.forEach(t => (t.address = noChecksum(t.address)));
-    inputs.forEach(i => (i.address = noChecksum(i.address)));
+    transfers.forEach(t => (t.address = removeChecksum(t.address)));
+    inputs.forEach(i => (i.address = removeChecksum(i.address)));
     if (remainder) {
-      remainder.address = noChecksum(remainder.address);
+      remainder.address = removeChecksum(remainder.address);
     }
 
     if (this._hasDuplicateAddresses(transfers, inputs, remainder)) {
       throw new Error('transaction must not contain duplicate addresses');
     }
 
-    // pad transfer tags
-    transfers.forEach(t => (t.tag = t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG));
-    // set correct security level
-    inputs.forEach(i => (i.security = this.security));
-
     // use the current time
     const timestamp = Math.floor(Date.now() / 1000);
-    var bundle = new Bundle();
 
-    transfers.forEach(t =>
-      bundle.addEntry(1, t.address, t.value, t.tag, timestamp, -1)
+    var transactions = [];
+    transactions = transfers.reduce(
+      (acc, { address, value, tag }) =>
+        addEntry(acc, { address, value, timestamp, tag }),
+      transactions
     );
-    inputs.forEach(i =>
-      bundle.addEntry(
-        i.security,
-        i.address,
-        -i.balance,
-        EMPTY_TAG,
-        timestamp,
-        i.keyIndex
-      )
+    transactions = inputs.reduce(
+      (acc, input) =>
+        addEntry(acc, {
+          length: this.security,
+          address: input.address,
+          value: -input.balance,
+          timestamp
+        }),
+      transactions
     );
     if (remainder) {
-      bundle.addEntry(
-        1,
-        remainder.address,
-        remainder.value,
-        EMPTY_TAG,
-        timestamp,
-        remainder.keyIndex
-      );
+      transactions = addEntry(transactions, {
+        address: remainder.address,
+        value: remainder.value,
+        timestamp
+      });
     }
-    bundle.addTrytes([]);
-    bundle.finalize();
+    transactions = finalizeBundle(transactions);
 
     // map internal addresses to their index
     var addressKeyIndices = {};
-    inputs.forEach(i => (addressKeyIndices[i.address] = i.keyIndex));
+    inputs.forEach(
+      ({ address, keyIndex }) => (addressKeyIndices[address] = keyIndex)
+    );
     if (remainder) {
       addressKeyIndices[remainder.address] = remainder.keyIndex;
     }
 
     // sign the bundle on the ledger
-    bundle = await this._signBundle(bundle, addressKeyIndices);
+    transactions = await this._signBundle(
+      transactions,
+      inputs,
+      addressKeyIndices
+    );
 
-    // compute and return the corresponding trytes
-    var bundleTrytes = [];
-    bundle.bundle.forEach(tx => bundleTrytes.push(transactionTrytes(tx)));
-    return bundleTrytes.reverse();
+    return asFinalTransactionTrytes(transactions);
   }
 
   async _displayAddress(index) {
