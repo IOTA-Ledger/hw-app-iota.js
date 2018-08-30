@@ -148,7 +148,7 @@ class Iota {
     options.checksum = options.checksum || false;
     options.display = options.display || false;
 
-    var address = await this._publicKey(index, options.display);
+    let address = await this._publicKey(index, options.display);
     if (options.checksum) {
       address = addChecksum(address);
     }
@@ -318,10 +318,10 @@ class Iota {
     fields.tx_len = tx_len;
     fields.time = time;
 
-    var timeout = TIMEOUT_CMD_NON_USER_INTERACTION;
-    if (tx_idx == tx_len) {
-      timeout = TIMEOUT_CMD_USER_INTERACTION;
-    }
+    const timeout =
+      tx_idx == tx_len
+        ? TIMEOUT_CMD_USER_INTERACTION
+        : TIMEOUT_CMD_NON_USER_INTERACTION;
 
     const response = await this._sendCommand(
       Commands.INS_TX,
@@ -343,7 +343,7 @@ class Iota {
   }
 
   async _getSignatureFragments(index) {
-    var signature = '';
+    let signature = '';
     while (true) {
       const result = await this._sign(index);
       signature += result.signature;
@@ -361,8 +361,8 @@ class Iota {
     const { security } = this;
     const inputOffset = bundle.findIndex(({ value }) => value < 0);
 
-    var fragments = [];
-    for (var i = 0; i < inputs.length; i++) {
+    let fragments = [];
+    for (let i = 0; i < inputs.length; i++) {
       fragments = fragments.concat(
         await this._getSignatureFragments(inputOffset + security * i)
       );
@@ -372,7 +372,7 @@ class Iota {
   }
 
   async _signBundle(bundle, inputs, addressKeyIndices) {
-    var finalized = false;
+    let finalized = false;
     for (const tx of bundle) {
       const keyIndex = addressKeyIndices[tx.address]
         ? addressKeyIndices[tx.address]
@@ -421,7 +421,7 @@ class Iota {
     // use the current time
     const timestamp = Math.floor(Date.now() / 1000);
 
-    var transactions = [];
+    let transactions = [];
     transactions = transfers.reduce(
       (acc, { address, value, tag }) =>
         addEntry(acc, { address, value, timestamp, tag }),
@@ -447,7 +447,7 @@ class Iota {
     transactions = finalizeBundle(transactions);
 
     // map internal addresses to their index
-    var addressKeyIndices = {};
+    const addressKeyIndices = {};
     inputs.forEach(
       ({ address, keyIndex }) => (addressKeyIndices[address] = keyIndex)
     );
@@ -462,6 +462,7 @@ class Iota {
       addressKeyIndices
     );
 
+    // return trytes
     return asFinalTransactionTrytes(transactions);
   }
 
