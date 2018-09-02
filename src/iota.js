@@ -32,10 +32,12 @@ const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
 
+/** Validate a remainder object. */
 const isRemainder = remainder =>
-  isHash(remainder.address) &&
-  Number.isInteger(remainder.keyIndex) &&
-  remainder.keyIndex >= 0;
+  typeof remainder === 'undefined' ||
+  (isHash(remainder.address) &&
+    Number.isInteger(remainder.keyIndex) &&
+    remainder.keyIndex >= 0);
 
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
@@ -120,7 +122,10 @@ class Iota {
    * iota.setActiveSeed("44'/4218'/0'/0/0", 2);
    **/
   async setActiveSeed(path, security = 2) {
-    validate(securityLevelValidator(security));
+    validate(
+      [path, bippath.validateString, 'Invalid BIP32 path'],
+      securityLevelValidator(security)
+    );
     const pathArray = bippath.fromString(path).toPathArray();
     if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
       throw new Error('Invalid BIP32 path length');
@@ -183,11 +188,7 @@ class Iota {
     validate(
       arrayValidator(transferValidator)(transfers),
       arrayValidator(inputValidator)(inputs),
-      [
-        remainder,
-        typeof remainder === 'undefined' || isRemainder,
-        'Invalid remainder object'
-      ]
+      [remainder, isRemainder, 'Invalid remainder object']
     );
 
     // filter unnecessary inputs
