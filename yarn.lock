@@ -2,71 +2,71 @@
 # yarn lockfile v1
 
 
-"@iota/bundle@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/bundle/-/bundle-1.0.0-beta.3.tgz#7978b5f892c50c0400eedb8d132e1395383d74cc"
+"@iota/bundle@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/bundle/-/bundle-1.0.0-beta.4.tgz#e0a340682b61ab853ffa019bafbc78b81b0b1202"
   dependencies:
-    "@iota/converter" "^1.0.0-beta.3"
-    "@iota/kerl" "^1.0.0-beta.3"
-    "@iota/pad" "^1.0.0-beta.3"
-    "@iota/signing" "^1.0.0-beta.3"
+    "@iota/converter" "^1.0.0-beta.4"
+    "@iota/kerl" "^1.0.0-beta.4"
+    "@iota/pad" "^1.0.0-beta.4"
+    "@iota/signing" "^1.0.0-beta.4"
 
-"@iota/checksum@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.3.tgz#4e3c3463c64d2a10b6ad6c53cae292dd9c5c41c0"
+"@iota/checksum@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.4.tgz#d8004a3ba74da06e7ff936c3cc672407b8b81eff"
   dependencies:
-    "@iota/converter" "^1.0.0-beta.3"
-    "@iota/kerl" "^1.0.0-beta.3"
+    "@iota/converter" "^1.0.0-beta.4"
+    "@iota/kerl" "^1.0.0-beta.4"
 
-"@iota/converter@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.3.tgz#37abf54a885cc2aeceb6b6da37d3080b1c4f6cc9"
+"@iota/converter@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.4.tgz#2ac6040cb06cc06465a9f4e11e74e10318ba5364"
 
-"@iota/curl@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/curl/-/curl-1.0.0-beta.3.tgz#9076635faccd2ba6de76b8c9ffc9e4633b69604e"
+"@iota/curl@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/curl/-/curl-1.0.0-beta.4.tgz#61aea8a5310a3f9dcb1e897af43c964425b631fd"
 
-"@iota/kerl@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.3.tgz#d6b79c781faf30f40be45dabb7cd19f376286cef"
+"@iota/kerl@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.4.tgz#780ac241166ff675be5b1f58f9b7af233bc5a8ae"
   dependencies:
     "@types/crypto-js" "^3.1.38"
     crypto-js "^3.1.9-1"
 
-"@iota/pad@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/pad/-/pad-1.0.0-beta.3.tgz#de303ade312f61903d97f6a8bb20a091de726225"
+"@iota/pad@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/pad/-/pad-1.0.0-beta.4.tgz#cb0dee70a8a5d5fd5fa4949014d61624254eba88"
 
-"@iota/signing@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/signing/-/signing-1.0.0-beta.3.tgz#9e394eb1c87acf083be9085011f8d5f7a2d0bf31"
+"@iota/signing@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/signing/-/signing-1.0.0-beta.4.tgz#0d5a037c8cf6e0809e88da8f2e4861b79794891f"
   dependencies:
-    "@iota/converter" "^1.0.0-beta.3"
-    "@iota/kerl" "^1.0.0-beta.3"
-    "@iota/pad" "^1.0.0-beta.3"
+    "@iota/converter" "^1.0.0-beta.4"
+    "@iota/kerl" "^1.0.0-beta.4"
+    "@iota/pad" "^1.0.0-beta.4"
 
-"@iota/transaction-converter@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/transaction-converter/-/transaction-converter-1.0.0-beta.3.tgz#6aa4ac99bc2c17b09a519a83a5d03d3aa99962bd"
+"@iota/transaction-converter@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/transaction-converter/-/transaction-converter-1.0.0-beta.4.tgz#138c1a9e032b2d9ad41f3a7996b26c72fbcdae0e"
   dependencies:
-    "@iota/converter" "^1.0.0-beta.3"
-    "@iota/curl" "^1.0.0-beta.3"
-    "@iota/pad" "^1.0.0-beta.3"
-    "@iota/transaction" "^1.0.0-beta.3"
+    "@iota/converter" "^1.0.0-beta.4"
+    "@iota/curl" "^1.0.0-beta.4"
+    "@iota/pad" "^1.0.0-beta.4"
+    "@iota/transaction" "^1.0.0-beta.4"
 
-"@iota/transaction@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/transaction/-/transaction-1.0.0-beta.3.tgz#3efaa8e891bf9a5c38b89c0a1298f69cf1c20340"
+"@iota/transaction@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/transaction/-/transaction-1.0.0-beta.4.tgz#fac2b9960f0db6b14fc29da6e72a9d8d42bf9db6"
   dependencies:
-    "@iota/converter" "^1.0.0-beta.3"
-    "@iota/curl" "^1.0.0-beta.3"
+    "@iota/converter" "^1.0.0-beta.4"
+    "@iota/curl" "^1.0.0-beta.4"
 
-"@iota/validators@^1.0.0-beta.3":
-  version "1.0.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@iota/validators/-/validators-1.0.0-beta.3.tgz#c861dc02ede89e27d26bdac9d9f03891e8bd7656"
+"@iota/validators@^1.0.0-beta.4":
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@iota/validators/-/validators-1.0.0-beta.4.tgz#2a88f1f9b4d1ac2ea8a2195ce2b13c4b216f44ba"
   dependencies:
-    "@iota/checksum" "^1.0.0-beta.3"
-    "@iota/transaction" "^1.0.0-beta.3"
+    "@iota/checksum" "^1.0.0-beta.4"
+    "@iota/transaction" "^1.0.0-beta.4"
 
 "@types/crypto-js@^3.1.38":
   version "3.1.43"
