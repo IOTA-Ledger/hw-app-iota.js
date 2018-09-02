@@ -4,11 +4,12 @@ import { addEntry, finalizeBundle, addTrytes } from '@iota/bundle';
 import { addChecksum, removeChecksum } from '@iota/checksum';
 import { asFinalTransactionTrytes } from '@iota/transaction-converter';
 import {
+  isHash,
   validate,
-  securityLevelValidator,
   arrayValidator,
-  transferValidator,
-  inputValidator
+  inputValidator,
+  securityLevelValidator,
+  transferValidator
 } from '@iota/validators';
 
 /**
@@ -30,6 +31,11 @@ const Commands = {
 const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
+
+const isRemainder = remainder =>
+  isHash(remainder.address) &&
+  Number.isInteger(remainder.keyIndex) &&
+  remainder.keyIndex >= 0;
 
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
@@ -114,14 +120,11 @@ class Iota {
    * iota.setActiveSeed("44'/4218'/0'/0/0", 2);
    **/
   async setActiveSeed(path, security = 2) {
-    if (!bippath.validateString(path)) {
-      throw new Error('Invalid BIP32 path string');
-    }
+    validate(securityLevelValidator(security));
     const pathArray = bippath.fromString(path).toPathArray();
     if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
       throw new Error('Invalid BIP32 path length');
     }
-    validate(securityLevelValidator(security));
 
     this.pathArray = pathArray;
     this.security = security;
@@ -177,7 +180,15 @@ class Iota {
     if (!this.security) {
       throw new Error('Seed not yet initalized');
     }
-    validate(arrayValidator(transferValidator)(transfers), arrayValidator(inputValidator)(inputs));
+    validate(
+      arrayValidator(transferValidator)(transfers),
+      arrayValidator(inputValidator)(inputs),
+      [
+        remainder,
+        typeof remainder === 'undefined' || isRemainder,
+        'Invalid remainder object'
+      ]
+    );
 
     // filter unnecessary inputs
     inputs = inputs.filter(input => input.balance > 0);
@@ -185,7 +196,6 @@ class Iota {
     if (inputs.length < 1) {
       throw new Error('At least one input required');
     }
-
     if (transfers.length > 1 || inputs.length > 2) {
       throw new Error('Unsupported number of transfers or inputs');
     }
