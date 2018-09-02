@@ -7,7 +7,8 @@ import {
   validate,
   securityLevelValidator,
   arrayValidator,
-  transferValidator
+  transferValidator,
+  inputValidator
 } from '@iota/validators';
 
 /**
@@ -176,7 +177,7 @@ class Iota {
     if (!this.security) {
       throw new Error('Seed not yet initalized');
     }
-    validate(arrayValidator(transferValidator)(transfers));
+    validate(arrayValidator(transferValidator)(transfers), arrayValidator(inputValidator)(inputs));
 
     // filter unnecessary inputs
     inputs = inputs.filter(input => input.balance > 0);
