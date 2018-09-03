@@ -247,9 +247,9 @@ class Iota {
 
   async _setSeed(pathArray, security) {
     const setSeedInStruct = new Struct()
-      .word64Sle('security')
-      .word64Sle('pathLength')
-      .array('pathArray', pathArray.length, 'word64Sle');
+      .word8('security')
+      .word32Ule('pathLength')
+      .array('pathArray', pathArray.length, 'word32Ule');
 
     setSeedInStruct.allocate();
     setSeedInStruct.fields.security = security;
@@ -266,7 +266,7 @@ class Iota {
   }
 
   async _publicKey(index, display) {
-    const pubkeyInStruct = new Struct().word64Sle('index');
+    const pubkeyInStruct = new Struct().word32Ule('index');
 
     pubkeyInStruct.allocate();
     pubkeyInStruct.fields.index = index;
@@ -286,7 +286,7 @@ class Iota {
   }
 
   async _sign(index) {
-    const signInStruct = new Struct().word64Sle('index');
+    const signInStruct = new Struct().word32Ule('index');
 
     signInStruct.allocate();
     signInStruct.fields.index = index;
@@ -313,12 +313,12 @@ class Iota {
   async _transaction(address, address_idx, value, tag, tx_idx, tx_len, time) {
     const txInStruct = new Struct()
       .chars('address', 81)
-      .word64Sle('address_idx')
+      .word32Ule('address_idx')
       .word64Sle('value')
       .chars('tag', 27)
-      .word64Sle('tx_idx')
-      .word64Sle('tx_len')
-      .word64Sle('time');
+      .word32Ule('tx_idx')
+      .word32Ule('tx_len')
+      .word32Ule('time');
 
     txInStruct.allocate();
     const fields = txInStruct.fields;
@@ -343,9 +343,7 @@ class Iota {
       timeout
     );
 
-    const txOutStruct = new Struct()
-      .word8Sle('finalized')
-      .chars('bundleHash', 81);
+    const txOutStruct = new Struct().word8('finalized').chars('bundleHash', 81);
     txOutStruct.setBuffer(response);
 
     return {
@@ -496,7 +494,7 @@ class Iota {
   }
 
   async _displayAddress(index) {
-    const dispAddrInStruct = new Struct().word64Sle('index');
+    const dispAddrInStruct = new Struct().word32Ule('index');
 
     dispAddrInStruct.allocate();
     dispAddrInStruct.fields.index = index;
