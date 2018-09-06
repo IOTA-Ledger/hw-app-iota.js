@@ -1,6 +1,6 @@
 {
   "name": "hw-app-iota",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "scripts": {
     "clean": "rimraf dist",
     "format": "prettier --single-quote --write src/**/*.js",
@@ -9,8 +9,7 @@
     "prepublishOnly": "npm run clean && npm run lint && npm run build"
   },
   "description": "Ledger Hardware Wallet IOTA Application API",
-  "main": "./src/iota.js",
-  "module": "./dist/iota.js",
+  "main": "dist/iota.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/IOTA-Ledger/hw-app-iota.js.git"
