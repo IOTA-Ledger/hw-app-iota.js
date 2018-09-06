@@ -4,7 +4,17 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+var _getIterator2 = require('babel-runtime/core-js/get-iterator');
+
+var _getIterator3 = _interopRequireDefault(_getIterator2);
+
+var _isInteger = require('babel-runtime/core-js/number/is-integer');
+
+var _isInteger2 = _interopRequireDefault(_isInteger);
+
+var _typeof2 = require('babel-runtime/helpers/typeof');
+
+var _typeof3 = _interopRequireDefault(_typeof2);
 
 exports.isArray = isArray;
 exports.isSecurity = isSecurity;
@@ -15,10 +25,12 @@ exports.isRemainderObject = isRemainderObject;
 
 var _inputValidator = require('iota.lib.js/lib/utils/inputValidator');
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 function _isObject(object) {
   var isNull = object === null;
 
-  return !isNull && (typeof object === 'undefined' ? 'undefined' : _typeof(object)) === 'object';
+  return !isNull && (typeof object === 'undefined' ? 'undefined' : (0, _typeof3.default)(object)) === 'object';
 }
 
 function isArray(array) {
@@ -26,11 +38,11 @@ function isArray(array) {
 }
 
 function isSecurity(security) {
-  return Number.isInteger(security) && security >= 1 && security <= 3;
+  return (0, _isInteger2.default)(security) && security >= 1 && security <= 3;
 }
 
 function isIndex(index) {
-  return Number.isInteger(index) && index >= 0;
+  return (0, _isInteger2.default)(index) && index >= 0;
 }
 
 function isTransfersArray(transfers) {
@@ -43,13 +55,13 @@ function isTransfersArray(transfers) {
   var _iteratorError = undefined;
 
   try {
-    for (var _iterator = transfers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+    for (var _iterator = (0, _getIterator3.default)(transfers), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
       var transfer = _step.value;
 
       if (!(0, _inputValidator.isAddress)(transfer.address)) {
         return false;
       }
-      if (!Number.isInteger(transfer.value) || transfer.value < 0) {
+      if (!(0, _isInteger2.default)(transfer.value) || transfer.value < 0) {
         return false;
       }
       if (!(0, _inputValidator.isTrytes)(transfer.tag, '0,27')) {
@@ -84,13 +96,13 @@ function isInputsArray(inputs) {
   var _iteratorError2 = undefined;
 
   try {
-    for (var _iterator2 = inputs[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+    for (var _iterator2 = (0, _getIterator3.default)(inputs), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
       var input = _step2.value;
 
       if (!(0, _inputValidator.isAddress)(input.address)) {
         return false;
       }
-      if (!Number.isInteger(input.balance) || input.balance < 0) {
+      if (!(0, _isInteger2.default)(input.balance) || input.balance < 0) {
         return false;
       }
       if (!isIndex(input.keyIndex)) {

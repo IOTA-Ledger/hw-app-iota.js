@@ -1,4 +1,19 @@
 {
-  "presets": ["env"]
+  "presets": [
+    [
+      "env",
+      {
+        "targets": {
+          "browsers": [
+            "defaults"
+          ],
+          "node": 8
+        }
+      }
+    ]
+  ],
+  "plugins": [
+    "transform-runtime"
+  ]
 }
 
