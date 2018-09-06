@@ -63,3 +63,5 @@ typings/
 # OSX finder
 .DS_Store
 
+# As we are using yarn ignore npm lock file
+package-lock.json
