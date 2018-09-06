@@ -1,6 +1,6 @@
 {
   "name": "hw-app-iota",
-  "version": "0.1.1",
+  "version": "0.4.0",
   "scripts": {
     "clean": "rimraf dist",
     "format": "prettier --single-quote --write src/**/*.js",
