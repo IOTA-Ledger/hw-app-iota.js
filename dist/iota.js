@@ -4,7 +4,33 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _set = require('babel-runtime/core-js/set');
+
+var _set2 = _interopRequireDefault(_set);
+
+var _getIterator2 = require('babel-runtime/core-js/get-iterator');
+
+var _getIterator3 = _interopRequireDefault(_getIterator2);
+
+var _regenerator = require('babel-runtime/regenerator');
+
+var _regenerator2 = _interopRequireDefault(_regenerator);
+
+var _asyncToGenerator2 = require('babel-runtime/helpers/asyncToGenerator');
+
+var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
+
+var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
+
+var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+var _createClass2 = require('babel-runtime/helpers/createClass');
+
+var _createClass3 = _interopRequireDefault(_createClass2);
+
+var _isInteger = require('babel-runtime/core-js/number/is-integer');
+
+var _isInteger2 = _interopRequireDefault(_isInteger);
 
 var _bip32Path = require('bip32-path');
 
@@ -23,10 +49,6 @@ var _transactionConverter = require('@iota/transaction-converter');
 var _validators = require('@iota/validators');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /**
  * IOTA API
@@ -50,7 +72,7 @@ var TIMEOUT_CMD_USER_INTERACTION = 120000;
 
 /** Validate a remainder object. */
 var isRemainder = function isRemainder(remainder) {
-  return typeof remainder === 'undefined' || (0, _validators.isHash)(remainder.address) && Number.isInteger(remainder.keyIndex) && remainder.keyIndex >= 0;
+  return typeof remainder === 'undefined' || (0, _validators.isHash)(remainder.address) && (0, _isInteger2.default)(remainder.keyIndex) && remainder.keyIndex >= 0;
 };
 
 /**
@@ -136,7 +158,7 @@ function getIOTAStatusMessage(error) {
 
 var Iota = function () {
   function Iota(transport) {
-    _classCallCheck(this, Iota);
+    (0, _classCallCheck3.default)(this, Iota);
 
     this.transport = transport;
     this.security = 0;
@@ -154,13 +176,13 @@ var Iota = function () {
    **/
 
 
-  _createClass(Iota, [{
+  (0, _createClass3.default)(Iota, [{
     key: 'setActiveSeed',
     value: function () {
-      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(path) {
+      var _ref = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee(path) {
         var security = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
         var pathArray;
-        return regeneratorRuntime.wrap(function _callee$(_context) {
+        return _regenerator2.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
@@ -213,10 +235,10 @@ var Iota = function () {
   }, {
     key: 'getAddress',
     value: function () {
-      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(index) {
+      var _ref2 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee2(index) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         var address;
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+        return _regenerator2.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
@@ -279,9 +301,9 @@ var Iota = function () {
   }, {
     key: 'signTransaction',
     value: function () {
-      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(transfers, inputs, remainder) {
+      var _ref3 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee3(transfers, inputs, remainder) {
         var balance, payment, trytes;
-        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+        return _regenerator2.default.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
@@ -386,9 +408,9 @@ var Iota = function () {
   }, {
     key: 'getAppVersion',
     value: function () {
-      var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
+      var _ref4 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee4() {
         var config;
-        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+        return _regenerator2.default.wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
@@ -419,13 +441,13 @@ var Iota = function () {
   }, {
     key: '_setSeed',
     value: function () {
-      var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(pathArray, security) {
+      var _ref5 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee5(pathArray, security) {
         var setSeedInStruct;
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+        return _regenerator2.default.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
-                setSeedInStruct = new _struct2.default().word64Sle('security').word64Sle('pathLength').array('pathArray', pathArray.length, 'word64Sle');
+                setSeedInStruct = new _struct2.default().word8('security').word32Ule('pathLength').array('pathArray', pathArray.length, 'word32Ule');
 
 
                 setSeedInStruct.allocate();
@@ -453,13 +475,13 @@ var Iota = function () {
   }, {
     key: '_publicKey',
     value: function () {
-      var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(index, display) {
+      var _ref6 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee6(index, display) {
         var pubkeyInStruct, response, pubkeyOutStruct;
-        return regeneratorRuntime.wrap(function _callee6$(_context6) {
+        return _regenerator2.default.wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
-                pubkeyInStruct = new _struct2.default().word64Sle('index');
+                pubkeyInStruct = new _struct2.default().word32Ule('index');
 
 
                 pubkeyInStruct.allocate();
@@ -493,13 +515,13 @@ var Iota = function () {
   }, {
     key: '_sign',
     value: function () {
-      var _ref7 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(index) {
+      var _ref7 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee7(index) {
         var signInStruct, response, signOutStruct;
-        return regeneratorRuntime.wrap(function _callee7$(_context7) {
+        return _regenerator2.default.wrap(function _callee7$(_context7) {
           while (1) {
             switch (_context7.prev = _context7.next) {
               case 0:
-                signInStruct = new _struct2.default().word64Sle('index');
+                signInStruct = new _struct2.default().word32Ule('index');
 
 
                 signInStruct.allocate();
@@ -536,13 +558,13 @@ var Iota = function () {
   }, {
     key: '_transaction',
     value: function () {
-      var _ref8 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(address, address_idx, value, tag, tx_idx, tx_len, time) {
+      var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(address, address_idx, value, tag, tx_idx, tx_len, time) {
         var txInStruct, fields, timeout, response, txOutStruct;
-        return regeneratorRuntime.wrap(function _callee8$(_context8) {
+        return _regenerator2.default.wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
               case 0:
-                txInStruct = new _struct2.default().chars('address', 81).word64Sle('address_idx').word64Sle('value').chars('tag', 27).word64Sle('tx_idx').word64Sle('tx_len').word64Sle('time');
+                txInStruct = new _struct2.default().chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
 
 
                 txInStruct.allocate();
@@ -562,7 +584,7 @@ var Iota = function () {
 
               case 13:
                 response = _context8.sent;
-                txOutStruct = new _struct2.default().word8Sle('finalized').chars('bundleHash', 81);
+                txOutStruct = new _struct2.default().word8('finalized').chars('bundleHash', 81);
 
                 txOutStruct.setBuffer(response);
 
@@ -588,9 +610,9 @@ var Iota = function () {
   }, {
     key: '_getSignatureFragments',
     value: function () {
-      var _ref9 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9(index) {
+      var _ref9 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee9(index) {
         var signature, result;
-        return regeneratorRuntime.wrap(function _callee9$(_context9) {
+        return _regenerator2.default.wrap(function _callee9$(_context9) {
           while (1) {
             switch (_context9.prev = _context9.next) {
               case 0:
@@ -641,9 +663,9 @@ var Iota = function () {
   }, {
     key: '_addSignatureFragmentsToBundle',
     value: function () {
-      var _ref10 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee10(bundle, inputs) {
+      var _ref10 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee10(bundle, inputs) {
         var security, inputOffset, fragments, i;
-        return regeneratorRuntime.wrap(function _callee10$(_context10) {
+        return _regenerator2.default.wrap(function _callee10$(_context10) {
           while (1) {
             switch (_context10.prev = _context10.next) {
               case 0:
@@ -694,10 +716,10 @@ var Iota = function () {
   }, {
     key: '_signBundle',
     value: function () {
-      var _ref12 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11(bundle, inputs, addressKeyIndices) {
+      var _ref12 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee11(bundle, inputs, addressKeyIndices) {
         var finalized, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, tx, keyIndex, result;
 
-        return regeneratorRuntime.wrap(function _callee11$(_context11) {
+        return _regenerator2.default.wrap(function _callee11$(_context11) {
           while (1) {
             switch (_context11.prev = _context11.next) {
               case 0:
@@ -706,7 +728,7 @@ var Iota = function () {
                 _didIteratorError = false;
                 _iteratorError = undefined;
                 _context11.prev = 4;
-                _iterator = bundle[Symbol.iterator]();
+                _iterator = (0, _getIterator3.default)(bundle);
 
               case 6:
                 if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
@@ -795,7 +817,7 @@ var Iota = function () {
   }, {
     key: '_hasDuplicateAddresses',
     value: function _hasDuplicateAddresses(transfers, inputs, remainder) {
-      var set = new Set();
+      var set = new _set2.default();
       transfers.forEach(function (t) {
         return set.add(t.address);
       });
@@ -811,11 +833,11 @@ var Iota = function () {
   }, {
     key: '_signTransaction',
     value: function () {
-      var _ref13 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee12(transfers, inputs, remainder) {
+      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee12(transfers, inputs, remainder) {
         var _this = this;
 
         var timestamp, transactions, addressKeyIndices;
-        return regeneratorRuntime.wrap(function _callee12$(_context12) {
+        return _regenerator2.default.wrap(function _callee12$(_context12) {
           while (1) {
             switch (_context12.prev = _context12.next) {
               case 0:
@@ -903,13 +925,13 @@ var Iota = function () {
   }, {
     key: '_displayAddress',
     value: function () {
-      var _ref16 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee13(index) {
+      var _ref16 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13(index) {
         var dispAddrInStruct;
-        return regeneratorRuntime.wrap(function _callee13$(_context13) {
+        return _regenerator2.default.wrap(function _callee13$(_context13) {
           while (1) {
             switch (_context13.prev = _context13.next) {
               case 0:
-                dispAddrInStruct = new _struct2.default().word64Sle('index');
+                dispAddrInStruct = new _struct2.default().word32Ule('index');
 
 
                 dispAddrInStruct.allocate();
@@ -935,9 +957,9 @@ var Iota = function () {
   }, {
     key: '_getAppConfig',
     value: function () {
-      var _ref17 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee14() {
+      var _ref17 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee14() {
         var response, getAppConfigOutStruct;
-        return regeneratorRuntime.wrap(function _callee14$(_context14) {
+        return _regenerator2.default.wrap(function _callee14$(_context14) {
           while (1) {
             switch (_context14.prev = _context14.next) {
               case 0:
@@ -974,9 +996,9 @@ var Iota = function () {
   }, {
     key: '_reset',
     value: function () {
-      var _ref18 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee15() {
+      var _ref18 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee15() {
         var partial = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-        return regeneratorRuntime.wrap(function _callee15$(_context15) {
+        return _regenerator2.default.wrap(function _callee15$(_context15) {
           while (1) {
             switch (_context15.prev = _context15.next) {
               case 0:
@@ -1000,9 +1022,9 @@ var Iota = function () {
   }, {
     key: '_sendCommand',
     value: function () {
-      var _ref19 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee16(ins, p1, p2, data, timeout) {
+      var _ref19 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee16(ins, p1, p2, data, timeout) {
         var transport, smsg, statusCodeStr;
-        return regeneratorRuntime.wrap(function _callee16$(_context16) {
+        return _regenerator2.default.wrap(function _callee16$(_context16) {
           while (1) {
             switch (_context16.prev = _context16.next) {
               case 0:
@@ -1047,7 +1069,6 @@ var Iota = function () {
       return _sendCommand;
     }()
   }]);
-
   return Iota;
 }();
 
