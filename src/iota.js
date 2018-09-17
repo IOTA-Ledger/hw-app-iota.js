@@ -54,7 +54,7 @@ function getIOTAStatusMessage(error) {
     case 0x6d00: // SW_INS_NOT_SUPPORTED
       return 'Invalid INS command';
     case 0x6e00: // SW_CLA_NOT_SUPPORTED
-      return 'Incorrect CLA (First byte must be 0x7A)';
+      return 'Incorrect CLA (Wrong application opened)';
     case 0x6984: // SW_COMMAND_INVALID_DATA
       return 'Invalid input data';
     case 0x6985: // SW_COMMAND_INVALID_STATE
