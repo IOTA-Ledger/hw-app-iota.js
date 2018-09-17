@@ -64,7 +64,7 @@ BIP32 path.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| path | <code>String</code> |  | String representation of the 5-level BIP32 path |
+| path | <code>String</code> |  | String representation of the BIP32 path. At most 5 levels. |
 | [security] | <code>Number</code> | <code>2</code> | IOTA security level to use |
 
 **Example**  
@@ -116,5 +116,4 @@ Returns an array of raw transaction data (trytes) including the signatures.
 #### iota.getAppVersion() ⇒ <code>Promise.&lt;String&gt;</code>
 Retrieves version information about the installed application.
 
-**Kind**: instance method of [<code>Iota</code>](#module_hw-app-iota..Iota)  
 **Returns**: <code>Promise.&lt;String&gt;</code> - Semantic Version string (i.e. MAJOR.MINOR.PATCH)  

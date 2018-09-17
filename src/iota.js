@@ -107,7 +107,7 @@ class Iota {
    * Initializes the Ledger with a security level and an IOTA seed based on a
    * BIP32 path.
    *
-   * @param {String} path - String representation of the 5-level BIP32 path
+   * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
    * @example
    * iota.setActiveSeed("44'/4218'/0'/0/0", 2);
