@@ -62,7 +62,6 @@ var Commands = {
   INS_PUBKEY: 0x02, // TIMEOUT_CMD_PUBKEY
   INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
   INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
-  INS_DISP_ADDR: 0x05, // TIMEOUT_CMD_PUBKEY
   INS_GET_APP_CONFIG: 0x10, // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_RESET: 0xff // TIMEOUT_CMD_NON_USER_INTERACTION
 };
@@ -112,6 +111,9 @@ function getIOTAStatusMessage(error) {
     case 0x6986:
       // SW_APP_NOT_INITIALIZED
       return 'App has not been initialized by user';
+    case 0x6987:
+      // SW_BAD_SEED
+      return 'Invalid seed';
     case 0x6991:
       // SW_TX_INVALID_INDEX
       return 'Invalid transaction index';
@@ -229,53 +231,73 @@ var Iota = function () {
 
       return setActiveSeed;
     }()
+    /**
+     * Returns a seed object for future use based on BIP32 path/security level
+     *
+     * @param {String} path - String representation of the BIP32 path. At most 5 levels.
+     * @param {Number} [security=2] - IOTA security level to use
+     * @example
+     * iota.getSeedObject("44'/4218'/0'/0/0", 2);
+     **/
+
+  }, {
+    key: 'getSeedObject',
+    value: function getSeedObject(path) {
+      var security = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
+
+      if (!_bip32Path2.default.validateString(path)) {
+        throw new Error('Invalid BIP32 path string');
+      }
+      var pathArray = _bip32Path2.default.fromString(path).toPathArray();
+      if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
+        throw new Error('Invalid BIP32 path length');
+      }
+      if (!inputValidator.isSecurity(security)) {
+        throw new Error('Invalid security level provided');
+      }
+
+      return { pathArray: pathArray, security: security };
+    }
 
     /**
      * Generates an address index-based.
      * The result depends on the initalized seed and security level.
-     *
+     * @param {Object} seedObj - Seed Object from getSeedObj
      * @param {Integer} index - Index of the address
      * @param {Object} [options]
      * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
      * @param {Boolean} [options.display=false] - Display generated address on display
      * @returns {Promise<String>} Tryte-encoded address
      * @example
-     * iota.getAddress(0, { checksum: true });
+     * iota.getAddress(seedObj, 0, { checksum: true });
      **/
 
   }, {
     key: 'getAddress',
     value: function () {
-      var _ref2 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee2(index) {
-        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      var _ref2 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee2(seedObj, index) {
+        var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
         var address;
         return _regenerator2.default.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
-                if (this.security) {
-                  _context2.next = 2;
-                  break;
-                }
-
-                throw new Error('Seed not yet initalized');
-
-              case 2:
                 if (inputValidator.isIndex(index)) {
-                  _context2.next = 4;
+                  _context2.next = 2;
                   break;
                 }
 
                 throw new Error('Invalid Index provided');
 
-              case 4:
+              case 2:
+
                 options.checksum = options.checksum || false;
                 options.display = options.display || false;
 
-                _context2.next = 8;
-                return this._publicKey(index, options.display);
+                _context2.next = 6;
+                return this._publicKey(seedObj, index, options.display);
 
-              case 8:
+              case 6:
                 address = _context2.sent;
 
                 if (options.checksum) {
@@ -284,7 +306,7 @@ var Iota = function () {
 
                 return _context2.abrupt('return', address);
 
-              case 11:
+              case 9:
               case 'end':
                 return _context2.stop();
             }
@@ -292,7 +314,7 @@ var Iota = function () {
         }, _callee2, this);
       }));
 
-      function getAddress(_x4) {
+      function getAddress(_x5, _x6) {
         return _ref2.apply(this, arguments);
       }
 
@@ -437,7 +459,7 @@ var Iota = function () {
         }, _callee3, this);
       }));
 
-      function signTransaction(_x5, _x6, _x7) {
+      function signTransaction(_x7, _x8, _x9) {
         return _ref3.apply(this, arguments);
       }
 
@@ -511,7 +533,7 @@ var Iota = function () {
         }, _callee5, this);
       }));
 
-      function _setSeed(_x8, _x9) {
+      function _setSeed(_x10, _x11) {
         return _ref5.apply(this, arguments);
       }
 
@@ -520,22 +542,25 @@ var Iota = function () {
   }, {
     key: '_publicKey',
     value: function () {
-      var _ref6 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee6(index, display) {
+      var _ref6 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee6(seedObj, index, display) {
         var pubkeyInStruct, response, pubkeyOutStruct;
         return _regenerator2.default.wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
-                pubkeyInStruct = new _struct2.default().word32Ule('index');
+                pubkeyInStruct = new _struct2.default().word8('security').word32Ule('pathLength').array('pathArray', seedObj.pathArray.length, 'word32Ule').word32Ule('index');
 
 
                 pubkeyInStruct.allocate();
+                pubkeyInStruct.fields.security = seedObj.security;
+                pubkeyInStruct.fields.pathLength = seedObj.pathArray.length;
+                pubkeyInStruct.fields.pathArray = seedObj.pathArray;
                 pubkeyInStruct.fields.index = index;
 
-                _context6.next = 5;
+                _context6.next = 8;
                 return this._sendCommand(Commands.INS_PUBKEY, display ? 0x01 : 0x00, 0, pubkeyInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
 
-              case 5:
+              case 8:
                 response = _context6.sent;
                 pubkeyOutStruct = new _struct2.default().chars('address', 81);
 
@@ -543,7 +568,7 @@ var Iota = function () {
 
                 return _context6.abrupt('return', pubkeyOutStruct.fields.address);
 
-              case 9:
+              case 12:
               case 'end':
                 return _context6.stop();
             }
@@ -551,7 +576,7 @@ var Iota = function () {
         }, _callee6, this);
       }));
 
-      function _publicKey(_x10, _x11) {
+      function _publicKey(_x12, _x13, _x14) {
         return _ref6.apply(this, arguments);
       }
 
@@ -594,7 +619,7 @@ var Iota = function () {
         }, _callee7, this);
       }));
 
-      function _sign(_x12) {
+      function _sign(_x15) {
         return _ref7.apply(this, arguments);
       }
 
@@ -651,7 +676,7 @@ var Iota = function () {
         }, _callee8, this);
       }));
 
-      function _transaction(_x13, _x14, _x15, _x16, _x17, _x18, _x19) {
+      function _transaction(_x16, _x17, _x18, _x19, _x20, _x21, _x22) {
         return _ref8.apply(this, arguments);
       }
 
@@ -704,7 +729,7 @@ var Iota = function () {
         }, _callee9, this);
       }));
 
-      function _getSignatureFragments(_x20) {
+      function _getSignatureFragments(_x23) {
         return _ref9.apply(this, arguments);
       }
 
@@ -786,7 +811,7 @@ var Iota = function () {
         }, _callee10, this);
       }));
 
-      function _addSignatureFragmentsToBundle(_x21) {
+      function _addSignatureFragmentsToBundle(_x24) {
         return _ref10.apply(this, arguments);
       }
 
@@ -887,7 +912,7 @@ var Iota = function () {
         }, _callee11, this, [[4, 18, 22, 30], [23,, 25, 29]]);
       }));
 
-      function _signBundle(_x22, _x23) {
+      function _signBundle(_x25, _x26) {
         return _ref11.apply(this, arguments);
       }
 
@@ -1000,63 +1025,31 @@ var Iota = function () {
         }, _callee12, this);
       }));
 
-      function _signTransaction(_x24, _x25, _x26) {
+      function _signTransaction(_x27, _x28, _x29) {
         return _ref12.apply(this, arguments);
       }
 
       return _signTransaction;
     }()
   }, {
-    key: '_displayAddress',
+    key: '_getAppConfig',
     value: function () {
-      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13(index) {
-        var dispAddrInStruct;
+      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13() {
+        var response, getAppConfigOutStruct;
         return _regenerator2.default.wrap(function _callee13$(_context13) {
           while (1) {
             switch (_context13.prev = _context13.next) {
               case 0:
-                dispAddrInStruct = new _struct2.default().word32Ule('index');
-
-
-                dispAddrInStruct.allocate();
-                dispAddrInStruct.fields.index = index;
-
-                _context13.next = 5;
-                return this._sendCommand(Commands.INS_DISP_ADDR, 0, 0, dispAddrInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
-
-              case 5:
-              case 'end':
-                return _context13.stop();
-            }
-          }
-        }, _callee13, this);
-      }));
-
-      function _displayAddress(_x27) {
-        return _ref13.apply(this, arguments);
-      }
-
-      return _displayAddress;
-    }()
-  }, {
-    key: '_getAppConfig',
-    value: function () {
-      var _ref14 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee14() {
-        var response, getAppConfigOutStruct;
-        return _regenerator2.default.wrap(function _callee14$(_context14) {
-          while (1) {
-            switch (_context14.prev = _context14.next) {
-              case 0:
-                _context14.next = 2;
+                _context13.next = 2;
                 return this._sendCommand(Commands.INS_GET_APP_CONFIG, 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
               case 2:
-                response = _context14.sent;
+                response = _context13.sent;
                 getAppConfigOutStruct = new _struct2.default().word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
 
                 getAppConfigOutStruct.setBuffer(response);
 
-                return _context14.abrupt('return', {
+                return _context13.abrupt('return', {
                   app_flags: getAppConfigOutStruct.fields.app_flags,
                   app_version_major: getAppConfigOutStruct.fields.app_version_major,
                   app_version_minor: getAppConfigOutStruct.fields.app_version_minor,
@@ -1065,14 +1058,14 @@ var Iota = function () {
 
               case 6:
               case 'end':
-                return _context14.stop();
+                return _context13.stop();
             }
           }
-        }, _callee14, this);
+        }, _callee13, this);
       }));
 
       function _getAppConfig() {
-        return _ref14.apply(this, arguments);
+        return _ref13.apply(this, arguments);
       }
 
       return _getAppConfig;
@@ -1080,25 +1073,25 @@ var Iota = function () {
   }, {
     key: '_reset',
     value: function () {
-      var _ref15 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee15() {
+      var _ref14 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee14() {
         var partial = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-        return _regenerator2.default.wrap(function _callee15$(_context15) {
+        return _regenerator2.default.wrap(function _callee14$(_context14) {
           while (1) {
-            switch (_context15.prev = _context15.next) {
+            switch (_context14.prev = _context14.next) {
               case 0:
-                _context15.next = 2;
+                _context14.next = 2;
                 return this._sendCommand(Commands.INS_RESET, partial ? 1 : 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
               case 2:
               case 'end':
-                return _context15.stop();
+                return _context14.stop();
             }
           }
-        }, _callee15, this);
+        }, _callee14, this);
       }));
 
       function _reset() {
-        return _ref15.apply(this, arguments);
+        return _ref14.apply(this, arguments);
       }
 
       return _reset;
@@ -1106,48 +1099,48 @@ var Iota = function () {
   }, {
     key: '_sendCommand',
     value: function () {
-      var _ref16 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee16(ins, p1, p2, data, timeout) {
+      var _ref15 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee15(ins, p1, p2, data, timeout) {
         var transport, smsg, statusCodeStr;
-        return _regenerator2.default.wrap(function _callee16$(_context16) {
+        return _regenerator2.default.wrap(function _callee15$(_context15) {
           while (1) {
-            switch (_context16.prev = _context16.next) {
+            switch (_context15.prev = _context15.next) {
               case 0:
                 transport = this.transport;
-                _context16.prev = 1;
+                _context15.prev = 1;
 
                 transport.setExchangeTimeout(timeout);
-                _context16.next = 5;
+                _context15.next = 5;
                 return transport.send(CLA, ins, p1, p2, data);
 
               case 5:
-                return _context16.abrupt('return', _context16.sent);
+                return _context15.abrupt('return', _context15.sent);
 
               case 8:
-                _context16.prev = 8;
-                _context16.t0 = _context16['catch'](1);
+                _context15.prev = 8;
+                _context15.t0 = _context15['catch'](1);
 
                 // set the message according to the status code
-                smsg = getIOTAStatusMessage(_context16.t0);
+                smsg = getIOTAStatusMessage(_context15.t0);
 
-                _context16.t0.message = 'Ledger device: ' + smsg;
-                if (_context16.t0.statusCode) {
+                _context15.t0.message = 'Ledger device: ' + smsg;
+                if (_context15.t0.statusCode) {
                   // add hex status code if present
-                  statusCodeStr = _context16.t0.statusCode.toString(16);
+                  statusCodeStr = _context15.t0.statusCode.toString(16);
 
-                  _context16.t0.message += ' (0x' + statusCodeStr + ')';
+                  _context15.t0.message += ' (0x' + statusCodeStr + ')';
                 }
-                throw _context16.t0;
+                throw _context15.t0;
 
               case 14:
               case 'end':
-                return _context16.stop();
+                return _context15.stop();
             }
           }
-        }, _callee16, this, [[1, 8]]);
+        }, _callee15, this, [[1, 8]]);
       }));
 
-      function _sendCommand(_x29, _x30, _x31, _x32, _x33) {
-        return _ref16.apply(this, arguments);
+      function _sendCommand(_x31, _x32, _x33, _x34, _x35) {
+        return _ref15.apply(this, arguments);
       }
 
       return _sendCommand;

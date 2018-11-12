@@ -20,7 +20,6 @@ const Commands = {
   INS_PUBKEY: 0x02, // TIMEOUT_CMD_PUBKEY
   INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
   INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
-  INS_DISP_ADDR: 0x05, // TIMEOUT_CMD_PUBKEY
   INS_GET_APP_CONFIG: 0x10, // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_RESET: 0xff // TIMEOUT_CMD_NON_USER_INTERACTION
 };
@@ -61,6 +60,8 @@ function getIOTAStatusMessage(error) {
       return 'Invalid ledger state (Command out of order(?))';
     case 0x6986: // SW_APP_NOT_INITIALIZED
       return 'App has not been initialized by user';
+    case 0x6987: // SW_BAD_SEED
+      return 'Invalid seed';
     case 0x6991: // SW_TX_INVALID_INDEX
       return 'Invalid transaction index';
     case 0x6992: // SW_TX_INVALID_ORDER
@@ -128,30 +129,50 @@ class Iota {
 
     await this._setSeed(pathArray, security);
   }
+  /**
+   * Returns a seed object for future use based on BIP32 path/security level
+   *
+   * @param {String} path - String representation of the BIP32 path. At most 5 levels.
+   * @param {Number} [security=2] - IOTA security level to use
+   * @example
+   * iota.getSeedObject("44'/4218'/0'/0/0", 2);
+   **/
+  getSeedObject(path, security = 2) {
+    if (!bippath.validateString(path)) {
+      throw new Error('Invalid BIP32 path string');
+    }
+    const pathArray = bippath.fromString(path).toPathArray();
+    if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
+      throw new Error('Invalid BIP32 path length');
+    }
+    if (!inputValidator.isSecurity(security)) {
+      throw new Error('Invalid security level provided');
+    }
+
+    return { pathArray: pathArray, security: security };
+  }
 
   /**
    * Generates an address index-based.
    * The result depends on the initalized seed and security level.
-   *
+   * @param {Object} seedObj - Seed Object from getSeedObj
    * @param {Integer} index - Index of the address
    * @param {Object} [options]
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
    * @param {Boolean} [options.display=false] - Display generated address on display
    * @returns {Promise<String>} Tryte-encoded address
    * @example
-   * iota.getAddress(0, { checksum: true });
+   * iota.getAddress(seedObj, 0, { checksum: true });
    **/
-  async getAddress(index, options = {}) {
-    if (!this.security) {
-      throw new Error('Seed not yet initalized');
-    }
+  async getAddress(seedObj, index, options = {}) {
     if (!inputValidator.isIndex(index)) {
       throw new Error('Invalid Index provided');
     }
+
     options.checksum = options.checksum || false;
     options.display = options.display || false;
 
-    var address = await this._publicKey(index, options.display);
+    var address = await this._publicKey(seedObj, index, options.display);
     if (options.checksum) {
       address = addChecksum(address);
     }
@@ -265,10 +286,17 @@ class Iota {
     );
   }
 
-  async _publicKey(index, display) {
-    const pubkeyInStruct = new Struct().word32Ule('index');
+  async _publicKey(seedObj, index, display) {
+    const pubkeyInStruct = new Struct()
+      .word8('security')
+      .word32Ule('pathLength')
+      .array('pathArray', seedObj.pathArray.length, 'word32Ule')
+      .word32Ule('index');
 
     pubkeyInStruct.allocate();
+    pubkeyInStruct.fields.security = seedObj.security;
+    pubkeyInStruct.fields.pathLength = seedObj.pathArray.length;
+    pubkeyInStruct.fields.pathArray = seedObj.pathArray;
     pubkeyInStruct.fields.index = index;
 
     const response = await this._sendCommand(
@@ -491,21 +519,6 @@ class Iota {
     var bundleTrytes = [];
     bundle.bundle.forEach(tx => bundleTrytes.push(transactionTrytes(tx)));
     return bundleTrytes.reverse();
-  }
-
-  async _displayAddress(index) {
-    const dispAddrInStruct = new Struct().word32Ule('index');
-
-    dispAddrInStruct.allocate();
-    dispAddrInStruct.fields.index = index;
-
-    await this._sendCommand(
-      Commands.INS_DISP_ADDR,
-      0,
-      0,
-      dispAddrInStruct.buffer(),
-      TIMEOUT_CMD_PUBKEY
-    );
   }
 
   async _getAppConfig() {
