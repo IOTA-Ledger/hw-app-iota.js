@@ -16,9 +16,10 @@ import * as inputValidator from './input_validator';
 const CLA = 0x7a;
 const Commands = {
   // specific timeouts:
-  INS_PUBKEY: 0x01, // TIMEOUT_CMD_PUBKEY
-  INS_TX: 0x02, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
-  INS_SIGN: 0x03, // TIMEOUT_CMD_PUBKEY
+  INS_SET_SEED: 0x01, // TIMEOUT_CMD_NON_USER_INTERACTION
+  INS_PUBKEY: 0x02, // TIMEOUT_CMD_PUBKEY
+  INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
+  INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
   INS_GET_APP_CONFIG: 0x10, // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_RESET: 0xff // TIMEOUT_CMD_NON_USER_INTERACTION
 };
@@ -104,46 +105,50 @@ class Iota {
   }
 
   /**
-   * Returns a seed object for future use based on BIP32 path/security level
+   * Prepares the IOTA seed to be used for subsequent calls
    *
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
    * @example
-   * iota.getSeedObject("44'/4218'/0'/0/0", 2);
+   * iota.setActiveSeed("44'/4218'/0'/0/0", 2);
    **/
-  getSeedObject(path, security = 2) {
+  async setActiveSeed(path, security = 2) {
     if (!bippath.validateString(path)) {
       throw new Error('Invalid BIP32 path string');
     }
-
     const pathArray = bippath.fromString(path).toPathArray();
-    if (!inputValidator.isPathArray(pathArray)) {
+    if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
       throw new Error('Invalid BIP32 path length');
     }
     if (!inputValidator.isSecurity(security)) {
       throw new Error('Invalid security level provided');
     }
 
-    this.security = security;
+    const appConfig = await this._getAppConfig();
 
-    return { pathArray: pathArray, security: security };
+    if (appConfig.app_version_minor < 5) {
+      await this._setSeed(pathArray, security);
+    }
+
+    this.appConfig = appConfig;
+    this.pathArray = pathArray;
+    this.security = security;
   }
 
   /**
    * Generates an address index-based.
    * The result depends on the initalized seed and security level.
-   * @param {Object} seedObj - Seed Object from getSeedObj
    * @param {Integer} index - Index of the address
    * @param {Object} [options]
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
    * @param {Boolean} [options.display=false] - Display generated address on display
    * @returns {Promise<String>} Tryte-encoded address
    * @example
-   * iota.getAddress(seedObj, 0, { checksum: true });
+   * iota.getAddress(0, { checksum: true });
    **/
-  async getAddress(seedObj, index, options = {}) {
-    if (!inputValidator.validSeedObject(seedObj)) {
-      throw new Error('Invalid seed object provided');
+  async getAddress(index, options = {}) {
+    if (!this.security) {
+      throw new Error('Seed not yet initalized');
     }
     if (!inputValidator.isIndex(index)) {
       throw new Error('Invalid Index provided');
@@ -152,7 +157,7 @@ class Iota {
     options.checksum = options.checksum || false;
     options.display = options.display || false;
 
-    var address = await this._publicKey(seedObj, index, options.display);
+    var address = await this._publicKey(index, options.display);
     if (options.checksum) {
       address = addChecksum(address);
     }
@@ -163,7 +168,6 @@ class Iota {
   /**
    * Returns an array of raw transaction data (trytes) including the signatures.
    *
-   * @param {Object} [seedObj] - Seed Object from getSeedObj
    * @param {Object[]} transfers - Transfer objects
    * @param {String} transfers[].address - Tryte-encoded address of recipient, with or without the 9 tryte checksum
    * @param {Integer} transfers[].value - Value to be transferred
@@ -177,9 +181,9 @@ class Iota {
    * @param {Integer} remainder.keyIndex - Index of the address
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
-  async signTransaction(seedObj, transfers, inputs, remainder) {
-    if (!inputValidator.validSeedObject(seedObj)) {
-      throw new Error('Invalid seed object provided');
+  async signTransaction(transfers, inputs, remainder) {
+    if (!this.security) {
+      throw new Error('Seed not yet initalized');
     }
     if (!inputValidator.isTransfersArray(transfers)) {
       throw new Error('Invalid transfers array provided');
@@ -221,12 +225,7 @@ class Iota {
       };
     }
 
-    const trytes = await this._signTransaction(
-      seedObj,
-      transfers,
-      inputs,
-      remainder
-    );
+    const trytes = await this._signTransaction(transfers, inputs, remainder);
     // reset the bundle
     await this._reset(true);
 
@@ -252,17 +251,49 @@ class Iota {
 
   ///////// Private methods should not be called directly! /////////
 
-  async _publicKey(seedObj, index, display) {
-    const pubkeyInStruct = new Struct()
+  async _setSeed(pathArray, security) {
+    const setSeedInStruct = new Struct()
       .word8('security')
       .word32Ule('pathLength')
-      .array('pathArray', seedObj.pathArray.length, 'word32Ule')
-      .word32Ule('index');
+      .array('pathArray', pathArray.length, 'word32Ule');
+
+    setSeedInStruct.allocate();
+    setSeedInStruct.fields.security = security;
+    setSeedInStruct.fields.pathLength = pathArray.length;
+    setSeedInStruct.fields.pathArray = pathArray;
+
+    await this._sendCommand(
+      Commands.INS_SET_SEED,
+      0,
+      0,
+      setSeedInStruct.buffer(),
+      TIMEOUT_CMD_NON_USER_INTERACTION
+    );
+  }
+
+  _addSeedFields(struct) {
+    struct = struct
+      .word8('security')
+      .word32Ule('pathLength')
+      .array('pathArray', this.pathArray.length, 'word32Ule');
+  }
+
+  _initSeedFields(struct) {
+    struct.fields.security = this.security;
+    struct.fields.pathLength = this.pathArray.length;
+    struct.fields.pathArray = this.pathArray;
+  }
+
+  async _publicKey(index, display) {
+    var pubkeyInStruct = new Struct();
+    const versionNew = this.appConfig.app_version_minor >= 5;
+
+    versionNew ? this._addSeedFields(pubkeyInStruct) : null;
+    pubkeyInStruct = pubkeyInStruct.word32Ule('index');
 
     pubkeyInStruct.allocate();
-    pubkeyInStruct.fields.security = seedObj.security;
-    pubkeyInStruct.fields.pathLength = seedObj.pathArray.length;
-    pubkeyInStruct.fields.pathArray = seedObj.pathArray;
+
+    versionNew ? this._initSeedFields(pubkeyInStruct) : null;
     pubkeyInStruct.fields.index = index;
 
     const response = await this._sendCommand(
@@ -304,20 +335,12 @@ class Iota {
     };
   }
 
-  async _transaction(
-    seedObj,
-    address,
-    address_idx,
-    value,
-    tag,
-    tx_idx,
-    tx_len,
-    time
-  ) {
-    const txInStruct = new Struct()
-      .word8('security')
-      .word32Ule('pathLength')
-      .array('pathArray', seedObj.pathArray.length, 'word32Ule')
+  async _transaction(address, address_idx, value, tag, tx_idx, tx_len, time) {
+    var txInStruct = new Struct();
+    const versionNew = this.appConfig.app_version_minor >= 5;
+
+    versionNew ? this._addSeedFields(txInStruct) : null;
+    txInStruct = txInStruct
       .chars('address', 81)
       .word32Ule('address_idx')
       .word64Sle('value')
@@ -327,10 +350,9 @@ class Iota {
       .word32Ule('time');
 
     txInStruct.allocate();
+
+    versionNew ? this._initSeedFields(txInStruct) : null;
     const fields = txInStruct.fields;
-    fields.security = seedObj.security;
-    fields.pathLength = seedObj.pathArray.length;
-    fields.pathArray = seedObj.pathArray;
     fields.address = address;
     fields.address_idx = address_idx;
     fields.value = value;
@@ -402,14 +424,13 @@ class Iota {
     }
   }
 
-  async _signBundle(seedObj, bundle, addressKeyIndices) {
+  async _signBundle(bundle, addressKeyIndices) {
     var finalized = false;
     for (const tx of bundle.bundle) {
       const keyIndex = addressKeyIndices[tx.address]
         ? addressKeyIndices[tx.address]
         : 0;
       const result = await this._transaction(
-        seedObj,
         tx.address,
         keyIndex,
         tx.value,
@@ -440,7 +461,7 @@ class Iota {
     return set.length === transfers.length + inputs.length;
   }
 
-  async _signTransaction(seedObj, transfers, inputs, remainder) {
+  async _signTransaction(transfers, inputs, remainder) {
     // remove checksums
     transfers.forEach(t => (t.address = noChecksum(t.address)));
     inputs.forEach(i => (i.address = noChecksum(i.address)));
@@ -495,7 +516,7 @@ class Iota {
     }
 
     // sign the bundle on the ledger
-    bundle = await this._signBundle(seedObj, bundle, addressKeyIndices);
+    bundle = await this._signBundle(bundle, addressKeyIndices);
 
     // compute and return the corresponding trytes
     var bundleTrytes = [];

@@ -58,9 +58,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var CLA = 0x7a;
 var Commands = {
   // specific timeouts:
-  INS_PUBKEY: 0x01, // TIMEOUT_CMD_PUBKEY
-  INS_TX: 0x02, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
-  INS_SIGN: 0x03, // TIMEOUT_CMD_PUBKEY
+  INS_SET_SEED: 0x01, // TIMEOUT_CMD_NON_USER_INTERACTION
+  INS_PUBKEY: 0x02, // TIMEOUT_CMD_PUBKEY
+  INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
+  INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
   INS_GET_APP_CONFIG: 0x10, // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_RESET: 0xff // TIMEOUT_CMD_NON_USER_INTERACTION
 };
@@ -164,70 +165,118 @@ var Iota = function () {
   }
 
   /**
-   * Returns a seed object for future use based on BIP32 path/security level
+   * Prepares the IOTA seed to be used for subsequent calls
    *
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
    * @example
-   * iota.getSeedObject("44'/4218'/0'/0/0", 2);
+   * iota.setActiveSeed("44'/4218'/0'/0/0", 2);
    **/
 
 
   (0, _createClass3.default)(Iota, [{
-    key: 'getSeedObject',
-    value: function getSeedObject(path) {
-      var security = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
+    key: 'setActiveSeed',
+    value: function () {
+      var _ref = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee(path) {
+        var security = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
+        var pathArray, appConfig;
+        return _regenerator2.default.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                if (_bip32Path2.default.validateString(path)) {
+                  _context.next = 2;
+                  break;
+                }
 
-      if (!_bip32Path2.default.validateString(path)) {
-        throw new Error('Invalid BIP32 path string');
+                throw new Error('Invalid BIP32 path string');
+
+              case 2:
+                pathArray = _bip32Path2.default.fromString(path).toPathArray();
+
+                if (!(!pathArray || pathArray.length < 2 || pathArray.length > 5)) {
+                  _context.next = 5;
+                  break;
+                }
+
+                throw new Error('Invalid BIP32 path length');
+
+              case 5:
+                if (inputValidator.isSecurity(security)) {
+                  _context.next = 7;
+                  break;
+                }
+
+                throw new Error('Invalid security level provided');
+
+              case 7:
+                _context.next = 9;
+                return this._getAppConfig();
+
+              case 9:
+                appConfig = _context.sent;
+
+                if (!(appConfig.app_version_minor < 5)) {
+                  _context.next = 13;
+                  break;
+                }
+
+                _context.next = 13;
+                return this._setSeed(pathArray, security);
+
+              case 13:
+
+                this.appConfig = appConfig;
+                this.pathArray = pathArray;
+                this.security = security;
+
+              case 16:
+              case 'end':
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      function setActiveSeed(_x2) {
+        return _ref.apply(this, arguments);
       }
 
-      var pathArray = _bip32Path2.default.fromString(path).toPathArray();
-      if (!inputValidator.isPathArray(pathArray)) {
-        throw new Error('Invalid BIP32 path length');
-      }
-      if (!inputValidator.isSecurity(security)) {
-        throw new Error('Invalid security level provided');
-      }
-
-      this.security = security;
-
-      return { pathArray: pathArray, security: security };
-    }
+      return setActiveSeed;
+    }()
 
     /**
      * Generates an address index-based.
      * The result depends on the initalized seed and security level.
-     * @param {Object} seedObj - Seed Object from getSeedObj
      * @param {Integer} index - Index of the address
      * @param {Object} [options]
      * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
      * @param {Boolean} [options.display=false] - Display generated address on display
      * @returns {Promise<String>} Tryte-encoded address
      * @example
-     * iota.getAddress(seedObj, 0, { checksum: true });
+     * iota.getAddress(0, { checksum: true });
      **/
 
   }, {
     key: 'getAddress',
     value: function () {
-      var _ref = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee(seedObj, index) {
-        var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+      var _ref2 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee2(index) {
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         var address;
-        return _regenerator2.default.wrap(function _callee$(_context) {
+        return _regenerator2.default.wrap(function _callee2$(_context2) {
           while (1) {
-            switch (_context.prev = _context.next) {
+            switch (_context2.prev = _context2.next) {
               case 0:
-                if (inputValidator.validSeedObject(seedObj)) {
-                  _context.next = 2;
+                if (this.security) {
+                  _context2.next = 2;
                   break;
                 }
 
-                throw new Error('Invalid seed object provided');
+                throw new Error('Seed not yet initalized');
 
               case 2:
                 if (inputValidator.isIndex(index)) {
-                  _context.next = 4;
+                  _context2.next = 4;
                   break;
                 }
 
@@ -238,28 +287,28 @@ var Iota = function () {
                 options.checksum = options.checksum || false;
                 options.display = options.display || false;
 
-                _context.next = 8;
-                return this._publicKey(seedObj, index, options.display);
+                _context2.next = 8;
+                return this._publicKey(index, options.display);
 
               case 8:
-                address = _context.sent;
+                address = _context2.sent;
 
                 if (options.checksum) {
                   address = (0, _utils.addChecksum)(address);
                 }
 
-                return _context.abrupt('return', address);
+                return _context2.abrupt('return', address);
 
               case 11:
               case 'end':
-                return _context.stop();
+                return _context2.stop();
             }
           }
-        }, _callee, this);
+        }, _callee2, this);
       }));
 
-      function getAddress(_x3, _x4) {
-        return _ref.apply(this, arguments);
+      function getAddress(_x4) {
+        return _ref2.apply(this, arguments);
       }
 
       return getAddress;
@@ -268,7 +317,6 @@ var Iota = function () {
     /**
      * Returns an array of raw transaction data (trytes) including the signatures.
      *
-     * @param {Object} [seedObj] - Seed Object from getSeedObj
      * @param {Object[]} transfers - Transfer objects
      * @param {String} transfers[].address - Tryte-encoded address of recipient, with or without the 9 tryte checksum
      * @param {Integer} transfers[].value - Value to be transferred
@@ -286,22 +334,22 @@ var Iota = function () {
   }, {
     key: 'signTransaction',
     value: function () {
-      var _ref2 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee2(seedObj, transfers, inputs, remainder) {
+      var _ref3 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee3(transfers, inputs, remainder) {
         var balance, payment, trytes;
-        return _regenerator2.default.wrap(function _callee2$(_context2) {
+        return _regenerator2.default.wrap(function _callee3$(_context3) {
           while (1) {
-            switch (_context2.prev = _context2.next) {
+            switch (_context3.prev = _context3.next) {
               case 0:
-                if (inputValidator.validSeedObject(seedObj)) {
-                  _context2.next = 2;
+                if (this.security) {
+                  _context3.next = 2;
                   break;
                 }
 
-                throw new Error('Invalid seed object provided');
+                throw new Error('Seed not yet initalized');
 
               case 2:
                 if (inputValidator.isTransfersArray(transfers)) {
-                  _context2.next = 4;
+                  _context3.next = 4;
                   break;
                 }
 
@@ -309,7 +357,7 @@ var Iota = function () {
 
               case 4:
                 if (inputValidator.isInputsArray(inputs)) {
-                  _context2.next = 6;
+                  _context3.next = 6;
                   break;
                 }
 
@@ -323,7 +371,7 @@ var Iota = function () {
                 });
 
                 if (!(inputs.length < 1)) {
-                  _context2.next = 9;
+                  _context3.next = 9;
                   break;
                 }
 
@@ -331,7 +379,7 @@ var Iota = function () {
 
               case 9:
                 if (!(transfers.length > 1 || inputs.length > 2)) {
-                  _context2.next = 11;
+                  _context3.next = 11;
                   break;
                 }
 
@@ -346,18 +394,18 @@ var Iota = function () {
                 }, 0);
 
                 if (!(balance === payment)) {
-                  _context2.next = 17;
+                  _context3.next = 17;
                   break;
                 }
 
                 // ignore the remainder, if there is no change
                 remainder = undefined;
-                _context2.next = 19;
+                _context3.next = 19;
                 break;
 
               case 17:
                 if (remainder) {
-                  _context2.next = 19;
+                  _context3.next = 19;
                   break;
                 }
 
@@ -365,12 +413,12 @@ var Iota = function () {
 
               case 19:
                 if (!remainder) {
-                  _context2.next = 23;
+                  _context3.next = 23;
                   break;
                 }
 
                 if (inputValidator.isRemainderObject(remainder)) {
-                  _context2.next = 22;
+                  _context3.next = 22;
                   break;
                 }
 
@@ -385,27 +433,27 @@ var Iota = function () {
                 };
 
               case 23:
-                _context2.next = 25;
-                return this._signTransaction(seedObj, transfers, inputs, remainder);
+                _context3.next = 25;
+                return this._signTransaction(transfers, inputs, remainder);
 
               case 25:
-                trytes = _context2.sent;
-                _context2.next = 28;
+                trytes = _context3.sent;
+                _context3.next = 28;
                 return this._reset(true);
 
               case 28:
-                return _context2.abrupt('return', trytes);
+                return _context3.abrupt('return', trytes);
 
               case 29:
               case 'end':
-                return _context2.stop();
+                return _context3.stop();
             }
           }
-        }, _callee2, this);
+        }, _callee3, this);
       }));
 
-      function signTransaction(_x5, _x6, _x7, _x8) {
-        return _ref2.apply(this, arguments);
+      function signTransaction(_x5, _x6, _x7) {
+        return _ref3.apply(this, arguments);
       }
 
       return signTransaction;
@@ -420,29 +468,29 @@ var Iota = function () {
   }, {
     key: 'getAppVersion',
     value: function () {
-      var _ref3 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee3() {
+      var _ref4 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee4() {
         var config;
-        return _regenerator2.default.wrap(function _callee3$(_context3) {
+        return _regenerator2.default.wrap(function _callee4$(_context4) {
           while (1) {
-            switch (_context3.prev = _context3.next) {
+            switch (_context4.prev = _context4.next) {
               case 0:
-                _context3.next = 2;
+                _context4.next = 2;
                 return this._getAppConfig();
 
               case 2:
-                config = _context3.sent;
-                return _context3.abrupt('return', '' + config.app_version_major + '.' + config.app_version_minor + '.' + config.app_version_patch);
+                config = _context4.sent;
+                return _context4.abrupt('return', '' + config.app_version_major + '.' + config.app_version_minor + '.' + config.app_version_patch);
 
               case 4:
               case 'end':
-                return _context3.stop();
+                return _context4.stop();
             }
           }
-        }, _callee3, this);
+        }, _callee4, this);
       }));
 
       function getAppVersion() {
-        return _ref3.apply(this, arguments);
+        return _ref4.apply(this, arguments);
       }
 
       return getAppVersion;
@@ -451,78 +499,26 @@ var Iota = function () {
     ///////// Private methods should not be called directly! /////////
 
   }, {
-    key: '_publicKey',
+    key: '_setSeed',
     value: function () {
-      var _ref4 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee4(seedObj, index, display) {
-        var pubkeyInStruct, response, pubkeyOutStruct;
-        return _regenerator2.default.wrap(function _callee4$(_context4) {
-          while (1) {
-            switch (_context4.prev = _context4.next) {
-              case 0:
-                pubkeyInStruct = new _struct2.default().word8('security').word32Ule('pathLength').array('pathArray', seedObj.pathArray.length, 'word32Ule').word32Ule('index');
-
-
-                pubkeyInStruct.allocate();
-                pubkeyInStruct.fields.security = seedObj.security;
-                pubkeyInStruct.fields.pathLength = seedObj.pathArray.length;
-                pubkeyInStruct.fields.pathArray = seedObj.pathArray;
-                pubkeyInStruct.fields.index = index;
-
-                _context4.next = 8;
-                return this._sendCommand(Commands.INS_PUBKEY, display ? 0x01 : 0x00, 0, pubkeyInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
-
-              case 8:
-                response = _context4.sent;
-                pubkeyOutStruct = new _struct2.default().chars('address', 81);
-
-                pubkeyOutStruct.setBuffer(response);
-
-                return _context4.abrupt('return', pubkeyOutStruct.fields.address);
-
-              case 12:
-              case 'end':
-                return _context4.stop();
-            }
-          }
-        }, _callee4, this);
-      }));
-
-      function _publicKey(_x9, _x10, _x11) {
-        return _ref4.apply(this, arguments);
-      }
-
-      return _publicKey;
-    }()
-  }, {
-    key: '_sign',
-    value: function () {
-      var _ref5 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee5(index) {
-        var signInStruct, response, signOutStruct;
+      var _ref5 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee5(pathArray, security) {
+        var setSeedInStruct;
         return _regenerator2.default.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
-                signInStruct = new _struct2.default().word32Ule('index');
+                setSeedInStruct = new _struct2.default().word8('security').word32Ule('pathLength').array('pathArray', pathArray.length, 'word32Ule');
 
 
-                signInStruct.allocate();
-                signInStruct.fields.index = index;
+                setSeedInStruct.allocate();
+                setSeedInStruct.fields.security = security;
+                setSeedInStruct.fields.pathLength = pathArray.length;
+                setSeedInStruct.fields.pathArray = pathArray;
 
-                _context5.next = 5;
-                return this._sendCommand(Commands.INS_SIGN, 0, 0, signInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
+                _context5.next = 7;
+                return this._sendCommand(Commands.INS_SET_SEED, 0, 0, setSeedInStruct.buffer(), TIMEOUT_CMD_NON_USER_INTERACTION);
 
-              case 5:
-                response = _context5.sent;
-                signOutStruct = new _struct2.default().chars('signature', 243).word8Sle('fragmentsRemaining');
-
-                signOutStruct.setBuffer(response);
-
-                return _context5.abrupt('return', {
-                  signature: signOutStruct.fields.signature,
-                  fragmentsRemaining: signOutStruct.fields.fragmentsRemaining
-                });
-
-              case 9:
+              case 7:
               case 'end':
                 return _context5.stop();
             }
@@ -530,8 +526,109 @@ var Iota = function () {
         }, _callee5, this);
       }));
 
-      function _sign(_x12) {
+      function _setSeed(_x8, _x9) {
         return _ref5.apply(this, arguments);
+      }
+
+      return _setSeed;
+    }()
+  }, {
+    key: '_addSeedFields',
+    value: function _addSeedFields(struct) {
+      struct = struct.word8('security').word32Ule('pathLength').array('pathArray', this.pathArray.length, 'word32Ule');
+    }
+  }, {
+    key: '_initSeedFields',
+    value: function _initSeedFields(struct) {
+      struct.fields.security = this.security;
+      struct.fields.pathLength = this.pathArray.length;
+      struct.fields.pathArray = this.pathArray;
+    }
+  }, {
+    key: '_publicKey',
+    value: function () {
+      var _ref6 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee6(index, display) {
+        var pubkeyInStruct, versionNew, response, pubkeyOutStruct;
+        return _regenerator2.default.wrap(function _callee6$(_context6) {
+          while (1) {
+            switch (_context6.prev = _context6.next) {
+              case 0:
+                pubkeyInStruct = new _struct2.default();
+                versionNew = this.appConfig.app_version_minor >= 5;
+
+
+                versionNew ? this._addSeedFields(pubkeyInStruct) : null;
+                pubkeyInStruct = pubkeyInStruct.word32Ule('index');
+
+                pubkeyInStruct.allocate();
+
+                versionNew ? this._initSeedFields(pubkeyInStruct) : null;
+                pubkeyInStruct.fields.index = index;
+
+                _context6.next = 9;
+                return this._sendCommand(Commands.INS_PUBKEY, display ? 0x01 : 0x00, 0, pubkeyInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
+
+              case 9:
+                response = _context6.sent;
+                pubkeyOutStruct = new _struct2.default().chars('address', 81);
+
+                pubkeyOutStruct.setBuffer(response);
+
+                return _context6.abrupt('return', pubkeyOutStruct.fields.address);
+
+              case 13:
+              case 'end':
+                return _context6.stop();
+            }
+          }
+        }, _callee6, this);
+      }));
+
+      function _publicKey(_x10, _x11) {
+        return _ref6.apply(this, arguments);
+      }
+
+      return _publicKey;
+    }()
+  }, {
+    key: '_sign',
+    value: function () {
+      var _ref7 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee7(index) {
+        var signInStruct, response, signOutStruct;
+        return _regenerator2.default.wrap(function _callee7$(_context7) {
+          while (1) {
+            switch (_context7.prev = _context7.next) {
+              case 0:
+                signInStruct = new _struct2.default().word32Ule('index');
+
+
+                signInStruct.allocate();
+                signInStruct.fields.index = index;
+
+                _context7.next = 5;
+                return this._sendCommand(Commands.INS_SIGN, 0, 0, signInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
+
+              case 5:
+                response = _context7.sent;
+                signOutStruct = new _struct2.default().chars('signature', 243).word8Sle('fragmentsRemaining');
+
+                signOutStruct.setBuffer(response);
+
+                return _context7.abrupt('return', {
+                  signature: signOutStruct.fields.signature,
+                  fragmentsRemaining: signOutStruct.fields.fragmentsRemaining
+                });
+
+              case 9:
+              case 'end':
+                return _context7.stop();
+            }
+          }
+        }, _callee7, this);
+      }));
+
+      function _sign(_x12) {
+        return _ref7.apply(this, arguments);
       }
 
       return _sign;
@@ -539,21 +636,24 @@ var Iota = function () {
   }, {
     key: '_transaction',
     value: function () {
-      var _ref6 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee6(seedObj, address, address_idx, value, tag, tx_idx, tx_len, time) {
-        var txInStruct, fields, timeout, response, txOutStruct;
-        return _regenerator2.default.wrap(function _callee6$(_context6) {
+      var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(address, address_idx, value, tag, tx_idx, tx_len, time) {
+        var txInStruct, versionNew, fields, timeout, response, txOutStruct;
+        return _regenerator2.default.wrap(function _callee8$(_context8) {
           while (1) {
-            switch (_context6.prev = _context6.next) {
+            switch (_context8.prev = _context8.next) {
               case 0:
-                txInStruct = new _struct2.default().word8('security').word32Ule('pathLength').array('pathArray', seedObj.pathArray.length, 'word32Ule').chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
+                txInStruct = new _struct2.default();
+                versionNew = this.appConfig.app_version_minor >= 5;
 
+
+                versionNew ? this._addSeedFields(txInStruct) : null;
+                txInStruct = txInStruct.chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
 
                 txInStruct.allocate();
+
+                versionNew ? this._initSeedFields(txInStruct) : null;
                 fields = txInStruct.fields;
 
-                fields.security = seedObj.security;
-                fields.pathLength = seedObj.pathArray.length;
-                fields.pathArray = seedObj.pathArray;
                 fields.address = address;
                 fields.address_idx = address_idx;
                 fields.value = value;
@@ -568,30 +668,30 @@ var Iota = function () {
                   timeout = TIMEOUT_CMD_USER_INTERACTION;
                 }
 
-                _context6.next = 17;
+                _context8.next = 18;
                 return this._sendCommand(Commands.INS_TX, 0, 0, txInStruct.buffer(), timeout);
 
-              case 17:
-                response = _context6.sent;
+              case 18:
+                response = _context8.sent;
                 txOutStruct = new _struct2.default().word8('finalized').chars('bundleHash', 81);
 
                 txOutStruct.setBuffer(response);
 
-                return _context6.abrupt('return', {
+                return _context8.abrupt('return', {
                   finalized: txOutStruct.fields.finalized,
                   bundleHash: txOutStruct.fields.bundleHash
                 });
 
-              case 21:
+              case 22:
               case 'end':
-                return _context6.stop();
+                return _context8.stop();
             }
           }
-        }, _callee6, this);
+        }, _callee8, this);
       }));
 
-      function _transaction(_x13, _x14, _x15, _x16, _x17, _x18, _x19, _x20) {
-        return _ref6.apply(this, arguments);
+      function _transaction(_x13, _x14, _x15, _x16, _x17, _x18, _x19) {
+        return _ref8.apply(this, arguments);
       }
 
       return _transaction;
@@ -599,52 +699,52 @@ var Iota = function () {
   }, {
     key: '_getSignatureFragments',
     value: function () {
-      var _ref7 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee7(index) {
+      var _ref9 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee9(index) {
         var signature, result;
-        return _regenerator2.default.wrap(function _callee7$(_context7) {
+        return _regenerator2.default.wrap(function _callee9$(_context9) {
           while (1) {
-            switch (_context7.prev = _context7.next) {
+            switch (_context9.prev = _context9.next) {
               case 0:
                 signature = '';
 
               case 1:
                 if (!true) {
-                  _context7.next = 10;
+                  _context9.next = 10;
                   break;
                 }
 
-                _context7.next = 4;
+                _context9.next = 4;
                 return this._sign(index);
 
               case 4:
-                result = _context7.sent;
+                result = _context9.sent;
 
                 signature += result.signature;
 
                 if (result.fragmentsRemaining) {
-                  _context7.next = 8;
+                  _context9.next = 8;
                   break;
                 }
 
-                return _context7.abrupt('break', 10);
+                return _context9.abrupt('break', 10);
 
               case 8:
-                _context7.next = 1;
+                _context9.next = 1;
                 break;
 
               case 10:
-                return _context7.abrupt('return', signature.match(/.{2187}/g));
+                return _context9.abrupt('return', signature.match(/.{2187}/g));
 
               case 11:
               case 'end':
-                return _context7.stop();
+                return _context9.stop();
             }
           }
-        }, _callee7, this);
+        }, _callee9, this);
       }));
 
-      function _getSignatureFragments(_x21) {
-        return _ref7.apply(this, arguments);
+      function _getSignatureFragments(_x20) {
+        return _ref9.apply(this, arguments);
       }
 
       return _getSignatureFragments;
@@ -652,34 +752,34 @@ var Iota = function () {
   }, {
     key: '_addSignatureFragmentsToBundle',
     value: function () {
-      var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(bundle) {
+      var _ref10 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee10(bundle) {
         var i, address, signatureFragments, j, tx;
-        return _regenerator2.default.wrap(function _callee8$(_context8) {
+        return _regenerator2.default.wrap(function _callee10$(_context10) {
           while (1) {
-            switch (_context8.prev = _context8.next) {
+            switch (_context10.prev = _context10.next) {
               case 0:
                 i = 0;
 
               case 1:
                 if (!(i < bundle.bundle.length)) {
-                  _context8.next = 21;
+                  _context10.next = 21;
                   break;
                 }
 
                 if (!(bundle.bundle[i].value >= 0)) {
-                  _context8.next = 4;
+                  _context10.next = 4;
                   break;
                 }
 
-                return _context8.abrupt('continue', 18);
+                return _context10.abrupt('continue', 18);
 
               case 4:
                 address = bundle.bundle[i].address;
-                _context8.next = 7;
+                _context10.next = 7;
                 return this._getSignatureFragments(i);
 
               case 7:
-                signatureFragments = _context8.sent;
+                signatureFragments = _context10.sent;
 
 
                 bundle.bundle[i].signatureMessageFragment = signatureFragments.shift();
@@ -689,16 +789,16 @@ var Iota = function () {
 
               case 10:
                 if (!(j < this.security)) {
-                  _context8.next = 18;
+                  _context10.next = 18;
                   break;
                 }
 
                 if (!(++i >= bundle.bundle.length)) {
-                  _context8.next = 13;
+                  _context10.next = 13;
                   break;
                 }
 
-                return _context8.abrupt('return');
+                return _context10.abrupt('return');
 
               case 13:
                 tx = bundle.bundle[i];
@@ -709,24 +809,24 @@ var Iota = function () {
 
               case 15:
                 j++;
-                _context8.next = 10;
+                _context10.next = 10;
                 break;
 
               case 18:
                 i++;
-                _context8.next = 1;
+                _context10.next = 1;
                 break;
 
               case 21:
               case 'end':
-                return _context8.stop();
+                return _context10.stop();
             }
           }
-        }, _callee8, this);
+        }, _callee10, this);
       }));
 
-      function _addSignatureFragmentsToBundle(_x22) {
-        return _ref8.apply(this, arguments);
+      function _addSignatureFragmentsToBundle(_x21) {
+        return _ref10.apply(this, arguments);
       }
 
       return _addSignatureFragmentsToBundle;
@@ -734,100 +834,100 @@ var Iota = function () {
   }, {
     key: '_signBundle',
     value: function () {
-      var _ref9 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee9(seedObj, bundle, addressKeyIndices) {
+      var _ref11 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee11(bundle, addressKeyIndices) {
         var finalized, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, tx, keyIndex, result;
 
-        return _regenerator2.default.wrap(function _callee9$(_context9) {
+        return _regenerator2.default.wrap(function _callee11$(_context11) {
           while (1) {
-            switch (_context9.prev = _context9.next) {
+            switch (_context11.prev = _context11.next) {
               case 0:
                 finalized = false;
                 _iteratorNormalCompletion = true;
                 _didIteratorError = false;
                 _iteratorError = undefined;
-                _context9.prev = 4;
+                _context11.prev = 4;
                 _iterator = (0, _getIterator3.default)(bundle.bundle);
 
               case 6:
                 if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                  _context9.next = 16;
+                  _context11.next = 16;
                   break;
                 }
 
                 tx = _step.value;
                 keyIndex = addressKeyIndices[tx.address] ? addressKeyIndices[tx.address] : 0;
-                _context9.next = 11;
-                return this._transaction(seedObj, tx.address, keyIndex, tx.value, tx.obsoleteTag, tx.currentIndex, tx.lastIndex, tx.timestamp);
+                _context11.next = 11;
+                return this._transaction(tx.address, keyIndex, tx.value, tx.obsoleteTag, tx.currentIndex, tx.lastIndex, tx.timestamp);
 
               case 11:
-                result = _context9.sent;
+                result = _context11.sent;
 
                 finalized = result.finalized;
 
               case 13:
                 _iteratorNormalCompletion = true;
-                _context9.next = 6;
+                _context11.next = 6;
                 break;
 
               case 16:
-                _context9.next = 22;
+                _context11.next = 22;
                 break;
 
               case 18:
-                _context9.prev = 18;
-                _context9.t0 = _context9['catch'](4);
+                _context11.prev = 18;
+                _context11.t0 = _context11['catch'](4);
                 _didIteratorError = true;
-                _iteratorError = _context9.t0;
+                _iteratorError = _context11.t0;
 
               case 22:
-                _context9.prev = 22;
-                _context9.prev = 23;
+                _context11.prev = 22;
+                _context11.prev = 23;
 
                 if (!_iteratorNormalCompletion && _iterator.return) {
                   _iterator.return();
                 }
 
               case 25:
-                _context9.prev = 25;
+                _context11.prev = 25;
 
                 if (!_didIteratorError) {
-                  _context9.next = 28;
+                  _context11.next = 28;
                   break;
                 }
 
                 throw _iteratorError;
 
               case 28:
-                return _context9.finish(25);
+                return _context11.finish(25);
 
               case 29:
-                return _context9.finish(22);
+                return _context11.finish(22);
 
               case 30:
                 if (finalized) {
-                  _context9.next = 32;
+                  _context11.next = 32;
                   break;
                 }
 
                 throw new Error('Bundle not finalized');
 
               case 32:
-                _context9.next = 34;
+                _context11.next = 34;
                 return this._addSignatureFragmentsToBundle(bundle);
 
               case 34:
-                return _context9.abrupt('return', bundle);
+                return _context11.abrupt('return', bundle);
 
               case 35:
               case 'end':
-                return _context9.stop();
+                return _context11.stop();
             }
           }
-        }, _callee9, this, [[4, 18, 22, 30], [23,, 25, 29]]);
+        }, _callee11, this, [[4, 18, 22, 30], [23,, 25, 29]]);
       }));
 
-      function _signBundle(_x23, _x24, _x25) {
-        return _ref9.apply(this, arguments);
+      function _signBundle(_x22, _x23) {
+        return _ref11.apply(this, arguments);
       }
 
       return _signBundle;
@@ -851,13 +951,13 @@ var Iota = function () {
   }, {
     key: '_signTransaction',
     value: function () {
-      var _ref10 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee10(seedObj, transfers, inputs, remainder) {
+      var _ref12 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee12(transfers, inputs, remainder) {
         var _this = this;
 
         var timestamp, bundle, addressKeyIndices, bundleTrytes;
-        return _regenerator2.default.wrap(function _callee10$(_context10) {
+        return _regenerator2.default.wrap(function _callee12$(_context12) {
           while (1) {
-            switch (_context10.prev = _context10.next) {
+            switch (_context12.prev = _context12.next) {
               case 0:
                 // remove checksums
                 transfers.forEach(function (t) {
@@ -871,7 +971,7 @@ var Iota = function () {
                 }
 
                 if (!this._hasDuplicateAddresses(transfers, inputs, remainder)) {
-                  _context10.next = 5;
+                  _context12.next = 5;
                   break;
                 }
 
@@ -916,11 +1016,11 @@ var Iota = function () {
                 }
 
                 // sign the bundle on the ledger
-                _context10.next = 19;
-                return this._signBundle(seedObj, bundle, addressKeyIndices);
+                _context12.next = 19;
+                return this._signBundle(bundle, addressKeyIndices);
 
               case 19:
-                bundle = _context10.sent;
+                bundle = _context12.sent;
 
 
                 // compute and return the corresponding trytes
@@ -929,18 +1029,18 @@ var Iota = function () {
                 bundle.bundle.forEach(function (tx) {
                   return bundleTrytes.push((0, _utils.transactionTrytes)(tx));
                 });
-                return _context10.abrupt('return', bundleTrytes.reverse());
+                return _context12.abrupt('return', bundleTrytes.reverse());
 
               case 23:
               case 'end':
-                return _context10.stop();
+                return _context12.stop();
             }
           }
-        }, _callee10, this);
+        }, _callee12, this);
       }));
 
-      function _signTransaction(_x26, _x27, _x28, _x29) {
-        return _ref10.apply(this, arguments);
+      function _signTransaction(_x24, _x25, _x26) {
+        return _ref12.apply(this, arguments);
       }
 
       return _signTransaction;
@@ -948,22 +1048,22 @@ var Iota = function () {
   }, {
     key: '_getAppConfig',
     value: function () {
-      var _ref11 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee11() {
+      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13() {
         var response, getAppConfigOutStruct;
-        return _regenerator2.default.wrap(function _callee11$(_context11) {
+        return _regenerator2.default.wrap(function _callee13$(_context13) {
           while (1) {
-            switch (_context11.prev = _context11.next) {
+            switch (_context13.prev = _context13.next) {
               case 0:
-                _context11.next = 2;
+                _context13.next = 2;
                 return this._sendCommand(Commands.INS_GET_APP_CONFIG, 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
               case 2:
-                response = _context11.sent;
+                response = _context13.sent;
                 getAppConfigOutStruct = new _struct2.default().word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
 
                 getAppConfigOutStruct.setBuffer(response);
 
-                return _context11.abrupt('return', {
+                return _context13.abrupt('return', {
                   app_flags: getAppConfigOutStruct.fields.app_flags,
                   app_version_major: getAppConfigOutStruct.fields.app_version_major,
                   app_version_minor: getAppConfigOutStruct.fields.app_version_minor,
@@ -972,14 +1072,14 @@ var Iota = function () {
 
               case 6:
               case 'end':
-                return _context11.stop();
+                return _context13.stop();
             }
           }
-        }, _callee11, this);
+        }, _callee13, this);
       }));
 
       function _getAppConfig() {
-        return _ref11.apply(this, arguments);
+        return _ref13.apply(this, arguments);
       }
 
       return _getAppConfig;
@@ -987,25 +1087,25 @@ var Iota = function () {
   }, {
     key: '_reset',
     value: function () {
-      var _ref12 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee12() {
+      var _ref14 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee14() {
         var partial = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-        return _regenerator2.default.wrap(function _callee12$(_context12) {
+        return _regenerator2.default.wrap(function _callee14$(_context14) {
           while (1) {
-            switch (_context12.prev = _context12.next) {
+            switch (_context14.prev = _context14.next) {
               case 0:
-                _context12.next = 2;
+                _context14.next = 2;
                 return this._sendCommand(Commands.INS_RESET, partial ? 1 : 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
               case 2:
               case 'end':
-                return _context12.stop();
+                return _context14.stop();
             }
           }
-        }, _callee12, this);
+        }, _callee14, this);
       }));
 
       function _reset() {
-        return _ref12.apply(this, arguments);
+        return _ref14.apply(this, arguments);
       }
 
       return _reset;
@@ -1013,48 +1113,48 @@ var Iota = function () {
   }, {
     key: '_sendCommand',
     value: function () {
-      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13(ins, p1, p2, data, timeout) {
+      var _ref15 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee15(ins, p1, p2, data, timeout) {
         var transport, smsg, statusCodeStr;
-        return _regenerator2.default.wrap(function _callee13$(_context13) {
+        return _regenerator2.default.wrap(function _callee15$(_context15) {
           while (1) {
-            switch (_context13.prev = _context13.next) {
+            switch (_context15.prev = _context15.next) {
               case 0:
                 transport = this.transport;
-                _context13.prev = 1;
+                _context15.prev = 1;
 
                 transport.setExchangeTimeout(timeout);
-                _context13.next = 5;
+                _context15.next = 5;
                 return transport.send(CLA, ins, p1, p2, data);
 
               case 5:
-                return _context13.abrupt('return', _context13.sent);
+                return _context15.abrupt('return', _context15.sent);
 
               case 8:
-                _context13.prev = 8;
-                _context13.t0 = _context13['catch'](1);
+                _context15.prev = 8;
+                _context15.t0 = _context15['catch'](1);
 
                 // set the message according to the status code
-                smsg = getIOTAStatusMessage(_context13.t0);
+                smsg = getIOTAStatusMessage(_context15.t0);
 
-                _context13.t0.message = 'Ledger device: ' + smsg;
-                if (_context13.t0.statusCode) {
+                _context15.t0.message = 'Ledger device: ' + smsg;
+                if (_context15.t0.statusCode) {
                   // add hex status code if present
-                  statusCodeStr = _context13.t0.statusCode.toString(16);
+                  statusCodeStr = _context15.t0.statusCode.toString(16);
 
-                  _context13.t0.message += ' (0x' + statusCodeStr + ')';
+                  _context15.t0.message += ' (0x' + statusCodeStr + ')';
                 }
-                throw _context13.t0;
+                throw _context15.t0;
 
               case 14:
               case 'end':
-                return _context13.stop();
+                return _context15.stop();
             }
           }
-        }, _callee13, this, [[1, 8]]);
+        }, _callee15, this, [[1, 8]]);
       }));
 
-      function _sendCommand(_x31, _x32, _x33, _x34, _x35) {
-        return _ref13.apply(this, arguments);
+      function _sendCommand(_x28, _x29, _x30, _x31, _x32) {
+        return _ref15.apply(this, arguments);
       }
 
       return _sendCommand;
