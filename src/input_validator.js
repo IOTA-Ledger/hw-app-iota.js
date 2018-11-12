@@ -6,6 +6,14 @@ function _isObject(object) {
   return !isNull && typeof object === 'object';
 }
 
+export function isPathArray(pathArray) {
+  if (!_isObject(pathArray)) {
+    return false;
+  }
+
+  return pathArray.length >= 2 && pathArray.length <= 5;
+}
+
 export function isArray(array) {
   return array instanceof Array;
 }
@@ -66,6 +74,23 @@ export function isRemainderObject(remainder) {
     return false;
   }
   if (!isIndex(remainder.keyIndex)) {
+    return false;
+  }
+
+  return true;
+}
+
+export function validSeedObject(seedObj) {
+  if (!_isObject(seedObj)) {
+    return false;
+  }
+  if (!'pathArray' in seedObj || !'security' in seedObj) {
+    return false;
+  }
+  if (!this.isPathArray(seedObj.pathArray)) {
+    return false;
+  }
+  if (!this.isSecurity(seedObj.security)) {
     return false;
   }
 

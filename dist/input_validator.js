@@ -16,12 +16,14 @@ var _typeof2 = require('babel-runtime/helpers/typeof');
 
 var _typeof3 = _interopRequireDefault(_typeof2);
 
+exports.isPathArray = isPathArray;
 exports.isArray = isArray;
 exports.isSecurity = isSecurity;
 exports.isIndex = isIndex;
 exports.isTransfersArray = isTransfersArray;
 exports.isInputsArray = isInputsArray;
 exports.isRemainderObject = isRemainderObject;
+exports.validSeedObject = validSeedObject;
 
 var _inputValidator = require('iota.lib.js/lib/utils/inputValidator');
 
@@ -31,6 +33,14 @@ function _isObject(object) {
   var isNull = object === null;
 
   return !isNull && (typeof object === 'undefined' ? 'undefined' : (0, _typeof3.default)(object)) === 'object';
+}
+
+function isPathArray(pathArray) {
+  if (!_isObject(pathArray)) {
+    return false;
+  }
+
+  return pathArray.length >= 2 && pathArray.length <= 5;
 }
 
 function isArray(array) {
@@ -135,6 +145,23 @@ function isRemainderObject(remainder) {
     return false;
   }
   if (!isIndex(remainder.keyIndex)) {
+    return false;
+  }
+
+  return true;
+}
+
+function validSeedObject(seedObj) {
+  if (!_isObject(seedObj)) {
+    return false;
+  }
+  if (!'pathArray' in seedObj || !'security' in seedObj) {
+    return false;
+  }
+  if (!this.isPathArray(seedObj.pathArray)) {
+    return false;
+  }
+  if (!this.isSecurity(seedObj.security)) {
     return false;
   }
 
