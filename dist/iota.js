@@ -161,6 +161,7 @@ var Iota = function () {
 
     this.transport = transport;
     this.security = 0;
+    this.pathArray = undefined;
     transport.decorateAppAPIMethods(this, ['setActiveSeed', 'getAddress', 'signTransaction', 'getAppVersion'], 'IOT');
   }
 
@@ -210,27 +211,38 @@ var Iota = function () {
                 throw new Error('Invalid security level provided');
 
               case 7:
-                _context.next = 9;
-                return this._getAppConfig();
 
-              case 9:
-                appConfig = _context.sent;
-
-                if (!(appConfig.app_version_minor < 5)) {
-                  _context.next = 13;
-                  break;
-                }
-
-                _context.next = 13;
-                return this._setSeed(pathArray, security);
-
-              case 13:
-
-                this.appConfig = appConfig;
                 this.pathArray = pathArray;
                 this.security = security;
 
-              case 16:
+                // query the version everytime
+                _context.next = 11;
+                return this._getAppConfig();
+
+              case 11:
+                appConfig = _context.sent;
+
+                if (!(appConfig.app_version_minor < 5)) {
+                  _context.next = 19;
+                  break;
+                }
+
+                // use legacy structs
+                this._createPubkeyInput = this._createPubkeyInputLegacy;
+                this._createTxInput = this._createTxInputLegacy;
+
+                _context.next = 17;
+                return this._setSeed(pathArray, security);
+
+              case 17:
+                _context.next = 21;
+                break;
+
+              case 19:
+                _context.next = 21;
+                return this._reset(true);
+
+              case 21:
               case 'end':
                 return _context.stop();
             }
@@ -293,13 +305,17 @@ var Iota = function () {
               case 8:
                 address = _context2.sent;
 
-                if (options.checksum) {
-                  address = (0, _utils.addChecksum)(address);
+                if (!options.checksum) {
+                  _context2.next = 11;
+                  break;
                 }
 
-                return _context2.abrupt('return', address);
+                return _context2.abrupt('return', (0, _utils.addChecksum)(address));
 
               case 11:
+                return _context2.abrupt('return', address);
+
+              case 12:
               case 'end':
                 return _context2.stop();
             }
@@ -535,7 +551,7 @@ var Iota = function () {
   }, {
     key: '_addSeedFields',
     value: function _addSeedFields(struct) {
-      struct = struct.word8('security').word32Ule('pathLength').array('pathArray', this.pathArray.length, 'word32Ule');
+      return struct.word8('security').word32Ule('pathLength').array('pathArray', this.pathArray.length, 'word32Ule');
     }
   }, {
     key: '_initSeedFields',
@@ -545,30 +561,45 @@ var Iota = function () {
       struct.fields.pathArray = this.pathArray;
     }
   }, {
+    key: '_createPubkeyInputLegacy',
+    value: function _createPubkeyInputLegacy(index) {
+      var struct = new _struct2.default();
+      struct = struct.word32Ule('index');
+
+      struct.allocate();
+
+      struct.fields.index = index;
+
+      return struct;
+    }
+  }, {
+    key: '_createPubkeyInput',
+    value: function _createPubkeyInput(index) {
+      var struct = new _struct2.default();
+      this._addSeedFields(struct);
+      struct = struct.word32Ule('index');
+
+      struct.allocate();
+
+      this._initSeedFields(struct);
+      struct.fields.index = index;
+
+      return struct;
+    }
+  }, {
     key: '_publicKey',
     value: function () {
       var _ref6 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee6(index, display) {
-        var pubkeyInStruct, versionNew, response, pubkeyOutStruct;
+        var pubkeyInStruct, response, pubkeyOutStruct;
         return _regenerator2.default.wrap(function _callee6$(_context6) {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
-                pubkeyInStruct = new _struct2.default();
-                versionNew = this.appConfig.app_version_minor >= 5;
-
-
-                versionNew ? this._addSeedFields(pubkeyInStruct) : null;
-                pubkeyInStruct = pubkeyInStruct.word32Ule('index');
-
-                pubkeyInStruct.allocate();
-
-                versionNew ? this._initSeedFields(pubkeyInStruct) : null;
-                pubkeyInStruct.fields.index = index;
-
-                _context6.next = 9;
+                pubkeyInStruct = this._createPubkeyInput(index);
+                _context6.next = 3;
                 return this._sendCommand(Commands.INS_PUBKEY, display ? 0x01 : 0x00, 0, pubkeyInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
 
-              case 9:
+              case 3:
                 response = _context6.sent;
                 pubkeyOutStruct = new _struct2.default().chars('address', 81);
 
@@ -576,7 +607,7 @@ var Iota = function () {
 
                 return _context6.abrupt('return', pubkeyOutStruct.fields.address);
 
-              case 13:
+              case 7:
               case 'end':
                 return _context6.stop();
             }
@@ -634,44 +665,69 @@ var Iota = function () {
       return _sign;
     }()
   }, {
+    key: '_createTxInputLegacy',
+    value: function _createTxInputLegacy(address, address_idx, value, tag, tx_idx, tx_len, time) {
+      var struct = new _struct2.default();
+      struct = struct.chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
+
+      struct.allocate();
+
+      var fields = struct.fields;
+      fields.address = address;
+      fields.address_idx = address_idx;
+      fields.value = value;
+      fields.tag = tag;
+      fields.tx_idx = tx_idx;
+      fields.tx_len = tx_len;
+      fields.time = time;
+
+      return struct;
+    }
+  }, {
+    key: '_createTxInput',
+    value: function _createTxInput(address, address_idx, value, tag, tx_idx, tx_len, time) {
+      var struct = new _struct2.default();
+      if (tx_idx == 0) {
+        this._addSeedFields(struct);
+      }
+      struct = struct.chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
+
+      struct.allocate();
+
+      if (tx_idx == 0) {
+        this._initSeedFields(struct);
+      }
+      var fields = struct.fields;
+      fields.address = address;
+      fields.address_idx = address_idx;
+      fields.value = value;
+      fields.tag = tag;
+      fields.tx_idx = tx_idx;
+      fields.tx_len = tx_len;
+      fields.time = time;
+
+      return struct;
+    }
+  }, {
     key: '_transaction',
     value: function () {
       var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(address, address_idx, value, tag, tx_idx, tx_len, time) {
-        var txInStruct, versionNew, fields, timeout, response, txOutStruct;
+        var txInStruct, timeout, response, txOutStruct;
         return _regenerator2.default.wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
               case 0:
-                txInStruct = new _struct2.default();
-                versionNew = this.appConfig.app_version_minor >= 5;
-
-
-                versionNew ? this._addSeedFields(txInStruct) : null;
-                txInStruct = txInStruct.chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
-
-                txInStruct.allocate();
-
-                versionNew ? this._initSeedFields(txInStruct) : null;
-                fields = txInStruct.fields;
-
-                fields.address = address;
-                fields.address_idx = address_idx;
-                fields.value = value;
-                fields.tag = tag;
-                fields.tx_idx = tx_idx;
-                fields.tx_len = tx_len;
-                fields.time = time;
-
+                txInStruct = this._createTxInput(address, address_idx, value, tag, tx_idx, tx_len, time);
                 timeout = TIMEOUT_CMD_NON_USER_INTERACTION;
 
                 if (tx_idx == tx_len) {
                   timeout = TIMEOUT_CMD_USER_INTERACTION;
                 }
 
-                _context8.next = 18;
-                return this._sendCommand(Commands.INS_TX, 0, 0, txInStruct.buffer(), timeout);
+                _context8.next = 5;
+                return this._sendCommand(Commands.INS_TX, tx_idx == 0 ? 0x00 : 0x80, 0, txInStruct.buffer(), timeout);
 
-              case 18:
+              case 5:
                 response = _context8.sent;
                 txOutStruct = new _struct2.default().word8('finalized').chars('bundleHash', 81);
 
@@ -682,7 +738,7 @@ var Iota = function () {
                   bundleHash: txOutStruct.fields.bundleHash
                 });
 
-              case 22:
+              case 9:
               case 'end':
                 return _context8.stop();
             }
@@ -835,95 +891,105 @@ var Iota = function () {
     key: '_signBundle',
     value: function () {
       var _ref11 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee11(bundle, addressKeyIndices) {
-        var finalized, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, tx, keyIndex, result;
+        var finalized, bundleHash, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, tx, keyIndex, result;
 
         return _regenerator2.default.wrap(function _callee11$(_context11) {
           while (1) {
             switch (_context11.prev = _context11.next) {
               case 0:
                 finalized = false;
+                bundleHash = '';
                 _iteratorNormalCompletion = true;
                 _didIteratorError = false;
                 _iteratorError = undefined;
-                _context11.prev = 4;
+                _context11.prev = 5;
                 _iterator = (0, _getIterator3.default)(bundle.bundle);
 
-              case 6:
+              case 7:
                 if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                  _context11.next = 16;
+                  _context11.next = 18;
                   break;
                 }
 
                 tx = _step.value;
                 keyIndex = addressKeyIndices[tx.address] ? addressKeyIndices[tx.address] : 0;
-                _context11.next = 11;
+                _context11.next = 12;
                 return this._transaction(tx.address, keyIndex, tx.value, tx.obsoleteTag, tx.currentIndex, tx.lastIndex, tx.timestamp);
 
-              case 11:
+              case 12:
                 result = _context11.sent;
 
                 finalized = result.finalized;
+                bundleHash = result.bundleHash;
 
-              case 13:
+              case 15:
                 _iteratorNormalCompletion = true;
-                _context11.next = 6;
-                break;
-
-              case 16:
-                _context11.next = 22;
+                _context11.next = 7;
                 break;
 
               case 18:
-                _context11.prev = 18;
-                _context11.t0 = _context11['catch'](4);
+                _context11.next = 24;
+                break;
+
+              case 20:
+                _context11.prev = 20;
+                _context11.t0 = _context11['catch'](5);
                 _didIteratorError = true;
                 _iteratorError = _context11.t0;
 
-              case 22:
-                _context11.prev = 22;
-                _context11.prev = 23;
+              case 24:
+                _context11.prev = 24;
+                _context11.prev = 25;
 
                 if (!_iteratorNormalCompletion && _iterator.return) {
                   _iterator.return();
                 }
 
-              case 25:
-                _context11.prev = 25;
+              case 27:
+                _context11.prev = 27;
 
                 if (!_didIteratorError) {
-                  _context11.next = 28;
+                  _context11.next = 30;
                   break;
                 }
 
                 throw _iteratorError;
 
-              case 28:
-                return _context11.finish(25);
-
-              case 29:
-                return _context11.finish(22);
-
               case 30:
+                return _context11.finish(27);
+
+              case 31:
+                return _context11.finish(24);
+
+              case 32:
                 if (finalized) {
-                  _context11.next = 32;
+                  _context11.next = 34;
                   break;
                 }
 
                 throw new Error('Bundle not finalized');
 
-              case 32:
-                _context11.next = 34;
+              case 34:
+                if (!(bundleHash !== bundle.bundle[0].bundle)) {
+                  _context11.next = 36;
+                  break;
+                }
+
+                throw new Error('Wrong bundle hash');
+
+              case 36:
+                _context11.next = 38;
                 return this._addSignatureFragmentsToBundle(bundle);
 
-              case 34:
+              case 38:
                 return _context11.abrupt('return', bundle);
 
-              case 35:
+              case 39:
               case 'end':
                 return _context11.stop();
             }
           }
-        }, _callee11, this, [[4, 18, 22, 30], [23,, 25, 29]]);
+        }, _callee11, this, [[5, 20, 24, 32], [25,, 27, 31]]);
       }));
 
       function _signBundle(_x22, _x23) {
