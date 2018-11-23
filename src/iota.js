@@ -27,6 +27,8 @@ const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
 
+const LEGACY_VERSION_MINOR = 5;
+
 const EMPTY_TAG = '9'.repeat(27);
 
 /**
@@ -131,12 +133,12 @@ class Iota {
     // query the version everytime
     const appConfig = await this._getAppConfig();
 
-    if (appConfig.app_version_minor < 5) {
+    if (appConfig.app_version_minor < LEGACY_VERSION_MINOR) {
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
 
-      await this._setSeed(pathArray, security);
+      await this._setSeed();
     } else {
       // reset the state on the Ledger
       await this._reset(true);
@@ -258,26 +260,6 @@ class Iota {
 
   ///////// Private methods should not be called directly! /////////
 
-  async _setSeed(pathArray, security) {
-    const setSeedInStruct = new Struct()
-      .word8('security')
-      .word32Ule('pathLength')
-      .array('pathArray', pathArray.length, 'word32Ule');
-
-    setSeedInStruct.allocate();
-    setSeedInStruct.fields.security = security;
-    setSeedInStruct.fields.pathLength = pathArray.length;
-    setSeedInStruct.fields.pathArray = pathArray;
-
-    await this._sendCommand(
-      Commands.INS_SET_SEED,
-      0,
-      0,
-      setSeedInStruct.buffer(),
-      TIMEOUT_CMD_NON_USER_INTERACTION
-    );
-  }
-
   _addSeedFields(struct) {
     return struct
       .word8('security')
@@ -286,9 +268,26 @@ class Iota {
   }
 
   _initSeedFields(struct) {
-    struct.fields.security = this.security;
-    struct.fields.pathLength = this.pathArray.length;
-    struct.fields.pathArray = this.pathArray;
+    const fields = struct.fields;
+    fields.security = this.security;
+    fields.pathLength = this.pathArray.length;
+    fields.pathArray = this.pathArray;
+  }
+
+  async _setSeed() {
+    const setSeedInStruct = new Struct();
+    this._addSeedFields(setSeedInStruct);
+
+    setSeedInStruct.allocate();
+    this._initSeedFields(setSeedInStruct);
+
+    await this._sendCommand(
+      Commands.INS_SET_SEED,
+      0,
+      0,
+      setSeedInStruct.buffer(),
+      TIMEOUT_CMD_NON_USER_INTERACTION
+    );
   }
 
   _createPubkeyInputLegacy(index) {

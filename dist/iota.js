@@ -69,6 +69,8 @@ var TIMEOUT_CMD_PUBKEY = 10000;
 var TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 var TIMEOUT_CMD_USER_INTERACTION = 120000;
 
+var LEGACY_VERSION_MINOR = 5;
+
 var EMPTY_TAG = '9'.repeat(27);
 
 /**
@@ -222,7 +224,7 @@ var Iota = function () {
               case 11:
                 appConfig = _context.sent;
 
-                if (!(appConfig.app_version_minor < 5)) {
+                if (!(appConfig.app_version_minor < LEGACY_VERSION_MINOR)) {
                   _context.next = 19;
                   break;
                 }
@@ -232,7 +234,7 @@ var Iota = function () {
                 this._createTxInput = this._createTxInputLegacy;
 
                 _context.next = 17;
-                return this._setSeed(pathArray, security);
+                return this._setSeed();
 
               case 17:
                 _context.next = 21;
@@ -515,40 +517,6 @@ var Iota = function () {
     ///////// Private methods should not be called directly! /////////
 
   }, {
-    key: '_setSeed',
-    value: function () {
-      var _ref5 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee5(pathArray, security) {
-        var setSeedInStruct;
-        return _regenerator2.default.wrap(function _callee5$(_context5) {
-          while (1) {
-            switch (_context5.prev = _context5.next) {
-              case 0:
-                setSeedInStruct = new _struct2.default().word8('security').word32Ule('pathLength').array('pathArray', pathArray.length, 'word32Ule');
-
-
-                setSeedInStruct.allocate();
-                setSeedInStruct.fields.security = security;
-                setSeedInStruct.fields.pathLength = pathArray.length;
-                setSeedInStruct.fields.pathArray = pathArray;
-
-                _context5.next = 7;
-                return this._sendCommand(Commands.INS_SET_SEED, 0, 0, setSeedInStruct.buffer(), TIMEOUT_CMD_NON_USER_INTERACTION);
-
-              case 7:
-              case 'end':
-                return _context5.stop();
-            }
-          }
-        }, _callee5, this);
-      }));
-
-      function _setSeed(_x8, _x9) {
-        return _ref5.apply(this, arguments);
-      }
-
-      return _setSeed;
-    }()
-  }, {
     key: '_addSeedFields',
     value: function _addSeedFields(struct) {
       return struct.word8('security').word32Ule('pathLength').array('pathArray', this.pathArray.length, 'word32Ule');
@@ -556,10 +524,44 @@ var Iota = function () {
   }, {
     key: '_initSeedFields',
     value: function _initSeedFields(struct) {
-      struct.fields.security = this.security;
-      struct.fields.pathLength = this.pathArray.length;
-      struct.fields.pathArray = this.pathArray;
+      var fields = struct.fields;
+      fields.security = this.security;
+      fields.pathLength = this.pathArray.length;
+      fields.pathArray = this.pathArray;
     }
+  }, {
+    key: '_setSeed',
+    value: function () {
+      var _ref5 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee5() {
+        var setSeedInStruct;
+        return _regenerator2.default.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                setSeedInStruct = new _struct2.default();
+
+                this._addSeedFields(setSeedInStruct);
+
+                setSeedInStruct.allocate();
+                this._initSeedFields(setSeedInStruct);
+
+                _context5.next = 6;
+                return this._sendCommand(Commands.INS_SET_SEED, 0, 0, setSeedInStruct.buffer(), TIMEOUT_CMD_NON_USER_INTERACTION);
+
+              case 6:
+              case 'end':
+                return _context5.stop();
+            }
+          }
+        }, _callee5, this);
+      }));
+
+      function _setSeed() {
+        return _ref5.apply(this, arguments);
+      }
+
+      return _setSeed;
+    }()
   }, {
     key: '_createPubkeyInputLegacy',
     value: function _createPubkeyInputLegacy(index) {
@@ -615,7 +617,7 @@ var Iota = function () {
         }, _callee6, this);
       }));
 
-      function _publicKey(_x10, _x11) {
+      function _publicKey(_x8, _x9) {
         return _ref6.apply(this, arguments);
       }
 
@@ -658,7 +660,7 @@ var Iota = function () {
         }, _callee7, this);
       }));
 
-      function _sign(_x12) {
+      function _sign(_x10) {
         return _ref7.apply(this, arguments);
       }
 
@@ -746,7 +748,7 @@ var Iota = function () {
         }, _callee8, this);
       }));
 
-      function _transaction(_x13, _x14, _x15, _x16, _x17, _x18, _x19) {
+      function _transaction(_x11, _x12, _x13, _x14, _x15, _x16, _x17) {
         return _ref8.apply(this, arguments);
       }
 
@@ -799,7 +801,7 @@ var Iota = function () {
         }, _callee9, this);
       }));
 
-      function _getSignatureFragments(_x20) {
+      function _getSignatureFragments(_x18) {
         return _ref9.apply(this, arguments);
       }
 
@@ -881,7 +883,7 @@ var Iota = function () {
         }, _callee10, this);
       }));
 
-      function _addSignatureFragmentsToBundle(_x21) {
+      function _addSignatureFragmentsToBundle(_x19) {
         return _ref10.apply(this, arguments);
       }
 
@@ -992,7 +994,7 @@ var Iota = function () {
         }, _callee11, this, [[5, 20, 24, 32], [25,, 27, 31]]);
       }));
 
-      function _signBundle(_x22, _x23) {
+      function _signBundle(_x20, _x21) {
         return _ref11.apply(this, arguments);
       }
 
@@ -1105,7 +1107,7 @@ var Iota = function () {
         }, _callee12, this);
       }));
 
-      function _signTransaction(_x24, _x25, _x26) {
+      function _signTransaction(_x22, _x23, _x24) {
         return _ref12.apply(this, arguments);
       }
 
@@ -1219,7 +1221,7 @@ var Iota = function () {
         }, _callee15, this, [[1, 8]]);
       }));
 
-      function _sendCommand(_x28, _x29, _x30, _x31, _x32) {
+      function _sendCommand(_x26, _x27, _x28, _x29, _x30) {
         return _ref15.apply(this, arguments);
       }
 
