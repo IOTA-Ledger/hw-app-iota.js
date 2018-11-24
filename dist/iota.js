@@ -120,9 +120,6 @@ function getIOTAStatusMessage(error) {
     case 0x6985:
       // SW_CONDITIONS_OF_USE_NOT_SATISFIED
       return 'Condition of use not satisfied (Denied by the user)';
-    case 0x6400:
-      // SW_COMMAND_NOT_EXECUTED
-      return 'Error during command execution';
     case 0x6401:
       // SW_COMMAND_TIMEOUT
       return 'Security not satisfied (Timeout exceeded)';

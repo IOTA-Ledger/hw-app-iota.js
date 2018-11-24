@@ -65,8 +65,6 @@ function getIOTAStatusMessage(error) {
       return 'Security not satisfied (Device locked)';
     case 0x6985: // SW_CONDITIONS_OF_USE_NOT_SATISFIED
       return 'Condition of use not satisfied (Denied by the user)';
-    case 0x6400: // SW_COMMAND_NOT_EXECUTED
-      return 'Error during command execution';
     case 0x6401: // SW_COMMAND_TIMEOUT
       return 'Security not satisfied (Timeout exceeded)';
     case 0x69a1: // SW_BUNDLE_ERROR + INSECURE HASH
