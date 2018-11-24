@@ -6,6 +6,7 @@ import {
   transactionTrytes
 } from 'iota.lib.js/lib/utils/utils';
 import bippath from 'bip32-path';
+import semver from 'semver';
 import * as inputValidator from './input_validator';
 
 /**
@@ -27,7 +28,7 @@ const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
 
-const LEGACY_VERSION_MINOR = 5;
+const LEGACY_VERSION_RANGE = '<0.5';
 
 const EMPTY_TAG = '9'.repeat(27);
 
@@ -142,9 +143,9 @@ class Iota {
     this.security = security;
 
     // query the version everytime
-    const appConfig = await this._getAppConfig();
+    const config = await this._getAppConfig();
 
-    if (appConfig.app_version_minor < LEGACY_VERSION_MINOR) {
+    if (semver.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
@@ -259,14 +260,7 @@ class Iota {
    **/
   async getAppVersion() {
     const config = await this._getAppConfig();
-    return (
-      '' +
-      config.app_version_major +
-      '.' +
-      config.app_version_minor +
-      '.' +
-      config.app_version_patch
-    );
+    return config.app_version;
   }
 
   ///////// Private methods should not be called directly! /////////
@@ -618,11 +612,15 @@ class Iota {
       .word8('app_version_patch');
     getAppConfigOutStruct.setBuffer(response);
 
+    const fields = getAppConfigOutStruct.fields;
     return {
-      app_flags: getAppConfigOutStruct.fields.app_flags,
-      app_version_major: getAppConfigOutStruct.fields.app_version_major,
-      app_version_minor: getAppConfigOutStruct.fields.app_version_minor,
-      app_version_patch: getAppConfigOutStruct.fields.app_version_patch
+      app_flags: fields.app_flags,
+      app_version:
+        fields.app_version_major +
+        '.' +
+        fields.app_version_minor +
+        '.' +
+        fields.app_version_patch
     };
   }
 

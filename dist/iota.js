@@ -42,6 +42,10 @@ var _bip32Path = require('bip32-path');
 
 var _bip32Path2 = _interopRequireDefault(_bip32Path);
 
+var _semver = require('semver');
+
+var _semver2 = _interopRequireDefault(_semver);
+
 var _input_validator = require('./input_validator');
 
 var inputValidator = _interopRequireWildcard(_input_validator);
@@ -69,7 +73,7 @@ var TIMEOUT_CMD_PUBKEY = 10000;
 var TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 var TIMEOUT_CMD_USER_INTERACTION = 120000;
 
-var LEGACY_VERSION_MINOR = 5;
+var LEGACY_VERSION_RANGE = '<0.5';
 
 var EMPTY_TAG = '9'.repeat(27);
 
@@ -197,7 +201,7 @@ var Iota = function () {
     value: function () {
       var _ref = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee(path) {
         var security = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
-        var pathArray, appConfig;
+        var pathArray, config;
         return _regenerator2.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -237,9 +241,9 @@ var Iota = function () {
                 return this._getAppConfig();
 
               case 11:
-                appConfig = _context.sent;
+                config = _context.sent;
 
-                if (!(appConfig.app_version_minor < LEGACY_VERSION_MINOR)) {
+                if (!_semver2.default.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
                   _context.next = 19;
                   break;
                 }
@@ -512,7 +516,7 @@ var Iota = function () {
 
               case 2:
                 config = _context4.sent;
-                return _context4.abrupt('return', '' + config.app_version_major + '.' + config.app_version_minor + '.' + config.app_version_patch);
+                return _context4.abrupt('return', config.app_version);
 
               case 4:
               case 'end':
@@ -1132,7 +1136,7 @@ var Iota = function () {
     key: '_getAppConfig',
     value: function () {
       var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13() {
-        var response, getAppConfigOutStruct;
+        var response, getAppConfigOutStruct, fields;
         return _regenerator2.default.wrap(function _callee13$(_context13) {
           while (1) {
             switch (_context13.prev = _context13.next) {
@@ -1146,14 +1150,13 @@ var Iota = function () {
 
                 getAppConfigOutStruct.setBuffer(response);
 
+                fields = getAppConfigOutStruct.fields;
                 return _context13.abrupt('return', {
-                  app_flags: getAppConfigOutStruct.fields.app_flags,
-                  app_version_major: getAppConfigOutStruct.fields.app_version_major,
-                  app_version_minor: getAppConfigOutStruct.fields.app_version_minor,
-                  app_version_patch: getAppConfigOutStruct.fields.app_version_patch
+                  app_flags: fields.app_flags,
+                  app_version: fields.app_version_major + '.' + fields.app_version_minor + '.' + fields.app_version_patch
                 });
 
-              case 6:
+              case 7:
               case 'end':
                 return _context13.stop();
             }
