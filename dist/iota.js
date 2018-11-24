@@ -42,6 +42,10 @@ var _bip32Path = require('bip32-path');
 
 var _bip32Path2 = _interopRequireDefault(_bip32Path);
 
+var _semver = require('semver');
+
+var _semver2 = _interopRequireDefault(_semver);
+
 var _input_validator = require('./input_validator');
 
 var inputValidator = _interopRequireWildcard(_input_validator);
@@ -62,13 +66,14 @@ var Commands = {
   INS_PUBKEY: 0x02, // TIMEOUT_CMD_PUBKEY
   INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
   INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
-  INS_DISP_ADDR: 0x05, // TIMEOUT_CMD_PUBKEY
   INS_GET_APP_CONFIG: 0x10, // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_RESET: 0xff // TIMEOUT_CMD_NON_USER_INTERACTION
 };
 var TIMEOUT_CMD_PUBKEY = 10000;
 var TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 var TIMEOUT_CMD_USER_INTERACTION = 120000;
+
+var LEGACY_VERSION_RANGE = '<0.5';
 
 var EMPTY_TAG = '9'.repeat(27);
 
@@ -91,9 +96,12 @@ function getIOTAStatusMessage(error) {
     case 0x6700:
       // SW_INCORRECT_LENGTH
       return 'Incorrect input length';
-    case 0x6982:
-      // SW_SECURITY_STATUS_NOT_SATISFIED
-      return 'Security not satisfied (Denied by user)';
+    case 0x6a80:
+      // SW_COMMAND_INVALID_DATA
+      return 'Incorrect data';
+    case 0x6b00:
+      // SW_INCORRECT_P1P2
+      return 'Incorrect command parameter';
     case 0x6c00:
       // SW_INCORRECT_LENGTH_P3
       return 'Incorrect length specified in header';
@@ -103,12 +111,38 @@ function getIOTAStatusMessage(error) {
     case 0x6e00:
       // SW_CLA_NOT_SUPPORTED
       return 'Incorrect CLA (Wrong application opened)';
+    case 0x6900:
+      // SW_COMMAND_NOT_ALLOWED
+      return 'Command not allowed (Command out of order)';
+    case 0x6982:
+      // SW_SECURITY_STATUS_NOT_SATISFIED
+      return 'Security not satisfied (Device locked)';
+    case 0x6985:
+      // SW_CONDITIONS_OF_USE_NOT_SATISFIED
+      return 'Condition of use not satisfied (Denied by the user)';
+    case 0x6401:
+      // SW_COMMAND_TIMEOUT
+      return 'Security not satisfied (Timeout exceeded)';
+    case 0x69a1:
+      // SW_BUNDLE_ERROR + INSECURE HASH
+      return 'Bundle error (Insecure hash)';
+    case 0x69a2:
+      // SW_BUNDLE_ERROR + NON-ZERO BALANCE
+      return 'Bundle error (Non zero balance)';
+    case 0x69a3:
+      // SW_BUNDLE_ERROR + INVALID META TX
+      return 'Bundle error (Invalid meta transaction)';
+    case 0x69a4:
+      // SW_BUNDLE_ERROR + INVALID ADDRESS INDEX
+      return 'Bundle error (Invalid input address/index pair(s))';
+    case 0x69a5:
+      // SW_BUNDLE_ERROR + ADDRESS REUSED
+      return 'Bundle error (Address reused)';
+
+    // Legacy exceptions
     case 0x6984:
       // SW_COMMAND_INVALID_DATA
       return 'Invalid input data';
-    case 0x6985:
-      // SW_COMMAND_INVALID_STATE
-      return 'Invalid ledger state (Command out of order(?))';
     case 0x6986:
       // SW_APP_NOT_INITIALIZED
       return 'App has not been initialized by user';
@@ -124,21 +158,7 @@ function getIOTAStatusMessage(error) {
     case 0x6994:
       // SW_TX_INVALID_OUTPUT
       return 'Invalid output transaction (Output must come first)';
-    case 0x69a1:
-      // SW_BUNDLE_ERROR + INSECURE HASH
-      return 'Insecure hash';
-    case 0x69a2:
-      // SW_BUNDLE_ERROR + NON-ZERO BALANCE
-      return 'Non zero balance';
-    case 0x69a3:
-      // SW_BUNDLE_ERROR + INVALID META TX
-      return 'Invalid meta transaction';
-    case 0x69a4:
-      // SW_BUNDLE_ERROR + INVALID ADDRESS INDEX
-      return 'Invalid input address/index pair(s)';
-    case 0x69a5:
-      // SW_BUNDLE_ERROR + ADDRESS REUSED
-      return 'Address reused';
+
     default:
       // UNKNOWN ERROR CODE
       return error.message;
@@ -159,12 +179,12 @@ var Iota = function () {
 
     this.transport = transport;
     this.security = 0;
+    this.pathArray = undefined;
     transport.decorateAppAPIMethods(this, ['setActiveSeed', 'getAddress', 'signTransaction', 'getAppVersion'], 'IOT');
   }
 
   /**
-   * Initializes the Ledger with a security level and an IOTA seed based on a
-   * BIP32 path.
+   * Prepares the IOTA seed to be used for subsequent calls
    *
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
@@ -178,7 +198,7 @@ var Iota = function () {
     value: function () {
       var _ref = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee(path) {
         var security = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
-        var pathArray;
+        var pathArray, config;
         return _regenerator2.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -209,13 +229,38 @@ var Iota = function () {
                 throw new Error('Invalid security level provided');
 
               case 7:
+
                 this.pathArray = pathArray;
                 this.security = security;
 
+                // query the version everytime
                 _context.next = 11;
-                return this._setSeed(pathArray, security);
+                return this._getAppConfig();
 
               case 11:
+                config = _context.sent;
+
+                if (!_semver2.default.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
+                  _context.next = 19;
+                  break;
+                }
+
+                // use legacy structs
+                this._createPubkeyInput = this._createPubkeyInputLegacy;
+                this._createTxInput = this._createTxInputLegacy;
+
+                _context.next = 17;
+                return this._setSeed();
+
+              case 17:
+                _context.next = 21;
+                break;
+
+              case 19:
+                _context.next = 21;
+                return this._reset(true);
+
+              case 21:
               case 'end':
                 return _context.stop();
             }
@@ -233,7 +278,6 @@ var Iota = function () {
     /**
      * Generates an address index-based.
      * The result depends on the initalized seed and security level.
-     *
      * @param {Integer} index - Index of the address
      * @param {Object} [options]
      * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
@@ -269,6 +313,7 @@ var Iota = function () {
                 throw new Error('Invalid Index provided');
 
               case 4:
+
                 options.checksum = options.checksum || false;
                 options.display = options.display || false;
 
@@ -278,13 +323,17 @@ var Iota = function () {
               case 8:
                 address = _context2.sent;
 
-                if (options.checksum) {
-                  address = (0, _utils.addChecksum)(address);
+                if (!options.checksum) {
+                  _context2.next = 11;
+                  break;
                 }
 
-                return _context2.abrupt('return', address);
+                return _context2.abrupt('return', (0, _utils.addChecksum)(address));
 
               case 11:
+                return _context2.abrupt('return', address);
+
+              case 12:
               case 'end':
                 return _context2.stop();
             }
@@ -464,7 +513,7 @@ var Iota = function () {
 
               case 2:
                 config = _context4.sent;
-                return _context4.abrupt('return', '' + config.app_version_major + '.' + config.app_version_minor + '.' + config.app_version_patch);
+                return _context4.abrupt('return', config.app_version);
 
               case 4:
               case 'end':
@@ -484,26 +533,38 @@ var Iota = function () {
     ///////// Private methods should not be called directly! /////////
 
   }, {
+    key: '_addSeedFields',
+    value: function _addSeedFields(struct) {
+      return struct.word8('security').word32Ule('pathLength').array('pathArray', this.pathArray.length, 'word32Ule');
+    }
+  }, {
+    key: '_initSeedFields',
+    value: function _initSeedFields(struct) {
+      var fields = struct.fields;
+      fields.security = this.security;
+      fields.pathLength = this.pathArray.length;
+      fields.pathArray = this.pathArray;
+    }
+  }, {
     key: '_setSeed',
     value: function () {
-      var _ref5 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee5(pathArray, security) {
+      var _ref5 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee5() {
         var setSeedInStruct;
         return _regenerator2.default.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
-                setSeedInStruct = new _struct2.default().word8('security').word32Ule('pathLength').array('pathArray', pathArray.length, 'word32Ule');
+                setSeedInStruct = new _struct2.default();
 
+                this._addSeedFields(setSeedInStruct);
 
                 setSeedInStruct.allocate();
-                setSeedInStruct.fields.security = security;
-                setSeedInStruct.fields.pathLength = pathArray.length;
-                setSeedInStruct.fields.pathArray = pathArray;
+                this._initSeedFields(setSeedInStruct);
 
-                _context5.next = 7;
+                _context5.next = 6;
                 return this._sendCommand(Commands.INS_SET_SEED, 0, 0, setSeedInStruct.buffer(), TIMEOUT_CMD_NON_USER_INTERACTION);
 
-              case 7:
+              case 6:
               case 'end':
                 return _context5.stop();
             }
@@ -511,12 +572,38 @@ var Iota = function () {
         }, _callee5, this);
       }));
 
-      function _setSeed(_x8, _x9) {
+      function _setSeed() {
         return _ref5.apply(this, arguments);
       }
 
       return _setSeed;
     }()
+  }, {
+    key: '_createPubkeyInputLegacy',
+    value: function _createPubkeyInputLegacy(index) {
+      var struct = new _struct2.default();
+      struct = struct.word32Ule('index');
+
+      struct.allocate();
+
+      struct.fields.index = index;
+
+      return struct;
+    }
+  }, {
+    key: '_createPubkeyInput',
+    value: function _createPubkeyInput(index) {
+      var struct = new _struct2.default();
+      this._addSeedFields(struct);
+      struct = struct.word32Ule('index');
+
+      struct.allocate();
+
+      this._initSeedFields(struct);
+      struct.fields.index = index;
+
+      return struct;
+    }
   }, {
     key: '_publicKey',
     value: function () {
@@ -526,16 +613,11 @@ var Iota = function () {
           while (1) {
             switch (_context6.prev = _context6.next) {
               case 0:
-                pubkeyInStruct = new _struct2.default().word32Ule('index');
-
-
-                pubkeyInStruct.allocate();
-                pubkeyInStruct.fields.index = index;
-
-                _context6.next = 5;
+                pubkeyInStruct = this._createPubkeyInput(index);
+                _context6.next = 3;
                 return this._sendCommand(Commands.INS_PUBKEY, display ? 0x01 : 0x00, 0, pubkeyInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
 
-              case 5:
+              case 3:
                 response = _context6.sent;
                 pubkeyOutStruct = new _struct2.default().chars('address', 81);
 
@@ -543,7 +625,7 @@ var Iota = function () {
 
                 return _context6.abrupt('return', pubkeyOutStruct.fields.address);
 
-              case 9:
+              case 7:
               case 'end':
                 return _context6.stop();
             }
@@ -551,7 +633,7 @@ var Iota = function () {
         }, _callee6, this);
       }));
 
-      function _publicKey(_x10, _x11) {
+      function _publicKey(_x8, _x9) {
         return _ref6.apply(this, arguments);
       }
 
@@ -594,45 +676,76 @@ var Iota = function () {
         }, _callee7, this);
       }));
 
-      function _sign(_x12) {
+      function _sign(_x10) {
         return _ref7.apply(this, arguments);
       }
 
       return _sign;
     }()
   }, {
+    key: '_createTxInputLegacy',
+    value: function _createTxInputLegacy(address, address_idx, value, tag, tx_idx, tx_len, time) {
+      var struct = new _struct2.default();
+      struct = struct.chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
+
+      struct.allocate();
+
+      var fields = struct.fields;
+      fields.address = address;
+      fields.address_idx = address_idx;
+      fields.value = value;
+      fields.tag = tag;
+      fields.tx_idx = tx_idx;
+      fields.tx_len = tx_len;
+      fields.time = time;
+
+      return struct;
+    }
+  }, {
+    key: '_createTxInput',
+    value: function _createTxInput(address, address_idx, value, tag, tx_idx, tx_len, time) {
+      var struct = new _struct2.default();
+      if (tx_idx == 0) {
+        this._addSeedFields(struct);
+      }
+      struct = struct.chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
+
+      struct.allocate();
+
+      if (tx_idx == 0) {
+        this._initSeedFields(struct);
+      }
+      var fields = struct.fields;
+      fields.address = address;
+      fields.address_idx = address_idx;
+      fields.value = value;
+      fields.tag = tag;
+      fields.tx_idx = tx_idx;
+      fields.tx_len = tx_len;
+      fields.time = time;
+
+      return struct;
+    }
+  }, {
     key: '_transaction',
     value: function () {
       var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(address, address_idx, value, tag, tx_idx, tx_len, time) {
-        var txInStruct, fields, timeout, response, txOutStruct;
+        var txInStruct, timeout, response, txOutStruct;
         return _regenerator2.default.wrap(function _callee8$(_context8) {
           while (1) {
             switch (_context8.prev = _context8.next) {
               case 0:
-                txInStruct = new _struct2.default().chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
-
-
-                txInStruct.allocate();
-                fields = txInStruct.fields;
-
-                fields.address = address;
-                fields.address_idx = address_idx;
-                fields.value = value;
-                fields.tag = tag;
-                fields.tx_idx = tx_idx;
-                fields.tx_len = tx_len;
-                fields.time = time;
-
+                txInStruct = this._createTxInput(address, address_idx, value, tag, tx_idx, tx_len, time);
                 timeout = TIMEOUT_CMD_NON_USER_INTERACTION;
 
                 if (tx_idx == tx_len) {
                   timeout = TIMEOUT_CMD_USER_INTERACTION;
                 }
 
-                _context8.next = 14;
-                return this._sendCommand(Commands.INS_TX, 0, 0, txInStruct.buffer(), timeout);
+                _context8.next = 5;
+                return this._sendCommand(Commands.INS_TX, tx_idx == 0 ? 0x00 : 0x80, 0, txInStruct.buffer(), timeout);
 
-              case 14:
+              case 5:
                 response = _context8.sent;
                 txOutStruct = new _struct2.default().word8('finalized').chars('bundleHash', 81);
 
@@ -643,7 +756,7 @@ var Iota = function () {
                   bundleHash: txOutStruct.fields.bundleHash
                 });
 
-              case 18:
+              case 9:
               case 'end':
                 return _context8.stop();
             }
@@ -651,7 +764,7 @@ var Iota = function () {
         }, _callee8, this);
       }));
 
-      function _transaction(_x13, _x14, _x15, _x16, _x17, _x18, _x19) {
+      function _transaction(_x11, _x12, _x13, _x14, _x15, _x16, _x17) {
         return _ref8.apply(this, arguments);
       }
 
@@ -704,7 +817,7 @@ var Iota = function () {
         }, _callee9, this);
       }));
 
-      function _getSignatureFragments(_x20) {
+      function _getSignatureFragments(_x18) {
         return _ref9.apply(this, arguments);
       }
 
@@ -786,7 +899,7 @@ var Iota = function () {
         }, _callee10, this);
       }));
 
-      function _addSignatureFragmentsToBundle(_x21) {
+      function _addSignatureFragmentsToBundle(_x19) {
         return _ref10.apply(this, arguments);
       }
 
@@ -796,98 +909,108 @@ var Iota = function () {
     key: '_signBundle',
     value: function () {
       var _ref11 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee11(bundle, addressKeyIndices) {
-        var finalized, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, tx, keyIndex, result;
+        var finalized, bundleHash, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, tx, keyIndex, result;
 
         return _regenerator2.default.wrap(function _callee11$(_context11) {
           while (1) {
             switch (_context11.prev = _context11.next) {
               case 0:
                 finalized = false;
+                bundleHash = '';
                 _iteratorNormalCompletion = true;
                 _didIteratorError = false;
                 _iteratorError = undefined;
-                _context11.prev = 4;
+                _context11.prev = 5;
                 _iterator = (0, _getIterator3.default)(bundle.bundle);
 
-              case 6:
+              case 7:
                 if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
-                  _context11.next = 16;
+                  _context11.next = 18;
                   break;
                 }
 
                 tx = _step.value;
                 keyIndex = addressKeyIndices[tx.address] ? addressKeyIndices[tx.address] : 0;
-                _context11.next = 11;
+                _context11.next = 12;
                 return this._transaction(tx.address, keyIndex, tx.value, tx.obsoleteTag, tx.currentIndex, tx.lastIndex, tx.timestamp);
 
-              case 11:
+              case 12:
                 result = _context11.sent;
 
                 finalized = result.finalized;
+                bundleHash = result.bundleHash;
 
-              case 13:
+              case 15:
                 _iteratorNormalCompletion = true;
-                _context11.next = 6;
-                break;
-
-              case 16:
-                _context11.next = 22;
+                _context11.next = 7;
                 break;
 
               case 18:
-                _context11.prev = 18;
-                _context11.t0 = _context11['catch'](4);
+                _context11.next = 24;
+                break;
+
+              case 20:
+                _context11.prev = 20;
+                _context11.t0 = _context11['catch'](5);
                 _didIteratorError = true;
                 _iteratorError = _context11.t0;
 
-              case 22:
-                _context11.prev = 22;
-                _context11.prev = 23;
+              case 24:
+                _context11.prev = 24;
+                _context11.prev = 25;
 
                 if (!_iteratorNormalCompletion && _iterator.return) {
                   _iterator.return();
                 }
 
-              case 25:
-                _context11.prev = 25;
+              case 27:
+                _context11.prev = 27;
 
                 if (!_didIteratorError) {
-                  _context11.next = 28;
+                  _context11.next = 30;
                   break;
                 }
 
                 throw _iteratorError;
 
-              case 28:
-                return _context11.finish(25);
-
-              case 29:
-                return _context11.finish(22);
-
               case 30:
+                return _context11.finish(27);
+
+              case 31:
+                return _context11.finish(24);
+
+              case 32:
                 if (finalized) {
-                  _context11.next = 32;
+                  _context11.next = 34;
                   break;
                 }
 
                 throw new Error('Bundle not finalized');
 
-              case 32:
-                _context11.next = 34;
+              case 34:
+                if (!(bundleHash !== bundle.bundle[0].bundle)) {
+                  _context11.next = 36;
+                  break;
+                }
+
+                throw new Error('Wrong bundle hash');
+
+              case 36:
+                _context11.next = 38;
                 return this._addSignatureFragmentsToBundle(bundle);
 
-              case 34:
+              case 38:
                 return _context11.abrupt('return', bundle);
 
-              case 35:
+              case 39:
               case 'end':
                 return _context11.stop();
             }
           }
-        }, _callee11, this, [[4, 18, 22, 30], [23,, 25, 29]]);
+        }, _callee11, this, [[5, 20, 24, 32], [25,, 27, 31]]);
       }));
 
-      function _signBundle(_x22, _x23) {
+      function _signBundle(_x20, _x21) {
         return _ref11.apply(this, arguments);
       }
 
@@ -1000,31 +1123,37 @@ var Iota = function () {
         }, _callee12, this);
       }));
 
-      function _signTransaction(_x24, _x25, _x26) {
+      function _signTransaction(_x22, _x23, _x24) {
         return _ref12.apply(this, arguments);
       }
 
       return _signTransaction;
     }()
   }, {
-    key: '_displayAddress',
+    key: '_getAppConfig',
     value: function () {
-      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13(index) {
-        var dispAddrInStruct;
+      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13() {
+        var response, getAppConfigOutStruct, fields;
         return _regenerator2.default.wrap(function _callee13$(_context13) {
           while (1) {
             switch (_context13.prev = _context13.next) {
               case 0:
-                dispAddrInStruct = new _struct2.default().word32Ule('index');
+                _context13.next = 2;
+                return this._sendCommand(Commands.INS_GET_APP_CONFIG, 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
+              case 2:
+                response = _context13.sent;
+                getAppConfigOutStruct = new _struct2.default().word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
 
-                dispAddrInStruct.allocate();
-                dispAddrInStruct.fields.index = index;
+                getAppConfigOutStruct.setBuffer(response);
 
-                _context13.next = 5;
-                return this._sendCommand(Commands.INS_DISP_ADDR, 0, 0, dispAddrInStruct.buffer(), TIMEOUT_CMD_PUBKEY);
+                fields = getAppConfigOutStruct.fields;
+                return _context13.abrupt('return', {
+                  app_flags: fields.app_flags,
+                  app_version: fields.app_version_major + '.' + fields.app_version_minor + '.' + fields.app_version_patch
+                });
 
-              case 5:
+              case 7:
               case 'end':
                 return _context13.stop();
             }
@@ -1032,47 +1161,8 @@ var Iota = function () {
         }, _callee13, this);
       }));
 
-      function _displayAddress(_x27) {
-        return _ref13.apply(this, arguments);
-      }
-
-      return _displayAddress;
-    }()
-  }, {
-    key: '_getAppConfig',
-    value: function () {
-      var _ref14 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee14() {
-        var response, getAppConfigOutStruct;
-        return _regenerator2.default.wrap(function _callee14$(_context14) {
-          while (1) {
-            switch (_context14.prev = _context14.next) {
-              case 0:
-                _context14.next = 2;
-                return this._sendCommand(Commands.INS_GET_APP_CONFIG, 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
-
-              case 2:
-                response = _context14.sent;
-                getAppConfigOutStruct = new _struct2.default().word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
-
-                getAppConfigOutStruct.setBuffer(response);
-
-                return _context14.abrupt('return', {
-                  app_flags: getAppConfigOutStruct.fields.app_flags,
-                  app_version_major: getAppConfigOutStruct.fields.app_version_major,
-                  app_version_minor: getAppConfigOutStruct.fields.app_version_minor,
-                  app_version_patch: getAppConfigOutStruct.fields.app_version_patch
-                });
-
-              case 6:
-              case 'end':
-                return _context14.stop();
-            }
-          }
-        }, _callee14, this);
-      }));
-
       function _getAppConfig() {
-        return _ref14.apply(this, arguments);
+        return _ref13.apply(this, arguments);
       }
 
       return _getAppConfig;
@@ -1080,25 +1170,25 @@ var Iota = function () {
   }, {
     key: '_reset',
     value: function () {
-      var _ref15 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee15() {
+      var _ref14 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee14() {
         var partial = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-        return _regenerator2.default.wrap(function _callee15$(_context15) {
+        return _regenerator2.default.wrap(function _callee14$(_context14) {
           while (1) {
-            switch (_context15.prev = _context15.next) {
+            switch (_context14.prev = _context14.next) {
               case 0:
-                _context15.next = 2;
+                _context14.next = 2;
                 return this._sendCommand(Commands.INS_RESET, partial ? 1 : 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
               case 2:
               case 'end':
-                return _context15.stop();
+                return _context14.stop();
             }
           }
-        }, _callee15, this);
+        }, _callee14, this);
       }));
 
       function _reset() {
-        return _ref15.apply(this, arguments);
+        return _ref14.apply(this, arguments);
       }
 
       return _reset;
@@ -1106,48 +1196,48 @@ var Iota = function () {
   }, {
     key: '_sendCommand',
     value: function () {
-      var _ref16 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee16(ins, p1, p2, data, timeout) {
+      var _ref15 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee15(ins, p1, p2, data, timeout) {
         var transport, smsg, statusCodeStr;
-        return _regenerator2.default.wrap(function _callee16$(_context16) {
+        return _regenerator2.default.wrap(function _callee15$(_context15) {
           while (1) {
-            switch (_context16.prev = _context16.next) {
+            switch (_context15.prev = _context15.next) {
               case 0:
                 transport = this.transport;
-                _context16.prev = 1;
+                _context15.prev = 1;
 
                 transport.setExchangeTimeout(timeout);
-                _context16.next = 5;
+                _context15.next = 5;
                 return transport.send(CLA, ins, p1, p2, data);
 
               case 5:
-                return _context16.abrupt('return', _context16.sent);
+                return _context15.abrupt('return', _context15.sent);
 
               case 8:
-                _context16.prev = 8;
-                _context16.t0 = _context16['catch'](1);
+                _context15.prev = 8;
+                _context15.t0 = _context15['catch'](1);
 
                 // set the message according to the status code
-                smsg = getIOTAStatusMessage(_context16.t0);
+                smsg = getIOTAStatusMessage(_context15.t0);
 
-                _context16.t0.message = 'Ledger device: ' + smsg;
-                if (_context16.t0.statusCode) {
+                _context15.t0.message = 'Ledger device: ' + smsg;
+                if (_context15.t0.statusCode) {
                   // add hex status code if present
-                  statusCodeStr = _context16.t0.statusCode.toString(16);
+                  statusCodeStr = _context15.t0.statusCode.toString(16);
 
-                  _context16.t0.message += ' (0x' + statusCodeStr + ')';
+                  _context15.t0.message += ' (0x' + statusCodeStr + ')';
                 }
-                throw _context16.t0;
+                throw _context15.t0;
 
               case 14:
               case 'end':
-                return _context16.stop();
+                return _context15.stop();
             }
           }
-        }, _callee16, this, [[1, 8]]);
+        }, _callee15, this, [[1, 8]]);
       }));
 
-      function _sendCommand(_x29, _x30, _x31, _x32, _x33) {
-        return _ref16.apply(this, arguments);
+      function _sendCommand(_x26, _x27, _x28, _x29, _x30) {
+        return _ref15.apply(this, arguments);
       }
 
       return _sendCommand;

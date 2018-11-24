@@ -6,6 +6,7 @@ import {
   transactionTrytes
 } from 'iota.lib.js/lib/utils/utils';
 import bippath from 'bip32-path';
+import semver from 'semver';
 import * as inputValidator from './input_validator';
 
 /**
@@ -20,13 +21,14 @@ const Commands = {
   INS_PUBKEY: 0x02, // TIMEOUT_CMD_PUBKEY
   INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
   INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
-  INS_DISP_ADDR: 0x05, // TIMEOUT_CMD_PUBKEY
   INS_GET_APP_CONFIG: 0x10, // TIMEOUT_CMD_NON_USER_INTERACTION
   INS_RESET: 0xff // TIMEOUT_CMD_NON_USER_INTERACTION
 };
 const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
+
+const LEGACY_VERSION_RANGE = '<0.5';
 
 const EMPTY_TAG = '9'.repeat(27);
 
@@ -47,18 +49,38 @@ function getIOTAStatusMessage(error) {
       return 'Success';
     case 0x6700: // SW_INCORRECT_LENGTH
       return 'Incorrect input length';
-    case 0x6982: // SW_SECURITY_STATUS_NOT_SATISFIED
-      return 'Security not satisfied (Denied by user)';
+    case 0x6a80: // SW_COMMAND_INVALID_DATA
+      return 'Incorrect data';
+    case 0x6b00: // SW_INCORRECT_P1P2
+      return 'Incorrect command parameter';
     case 0x6c00: // SW_INCORRECT_LENGTH_P3
       return 'Incorrect length specified in header';
     case 0x6d00: // SW_INS_NOT_SUPPORTED
       return 'Invalid INS command';
     case 0x6e00: // SW_CLA_NOT_SUPPORTED
       return 'Incorrect CLA (Wrong application opened)';
+    case 0x6900: // SW_COMMAND_NOT_ALLOWED
+      return 'Command not allowed (Command out of order)';
+    case 0x6982: // SW_SECURITY_STATUS_NOT_SATISFIED
+      return 'Security not satisfied (Device locked)';
+    case 0x6985: // SW_CONDITIONS_OF_USE_NOT_SATISFIED
+      return 'Condition of use not satisfied (Denied by the user)';
+    case 0x6401: // SW_COMMAND_TIMEOUT
+      return 'Security not satisfied (Timeout exceeded)';
+    case 0x69a1: // SW_BUNDLE_ERROR + INSECURE HASH
+      return 'Bundle error (Insecure hash)';
+    case 0x69a2: // SW_BUNDLE_ERROR + NON-ZERO BALANCE
+      return 'Bundle error (Non zero balance)';
+    case 0x69a3: // SW_BUNDLE_ERROR + INVALID META TX
+      return 'Bundle error (Invalid meta transaction)';
+    case 0x69a4: // SW_BUNDLE_ERROR + INVALID ADDRESS INDEX
+      return 'Bundle error (Invalid input address/index pair(s))';
+    case 0x69a5: // SW_BUNDLE_ERROR + ADDRESS REUSED
+      return 'Bundle error (Address reused)';
+
+    // Legacy exceptions
     case 0x6984: // SW_COMMAND_INVALID_DATA
       return 'Invalid input data';
-    case 0x6985: // SW_COMMAND_INVALID_STATE
-      return 'Invalid ledger state (Command out of order(?))';
     case 0x6986: // SW_APP_NOT_INITIALIZED
       return 'App has not been initialized by user';
     case 0x6991: // SW_TX_INVALID_INDEX
@@ -69,16 +91,7 @@ function getIOTAStatusMessage(error) {
       return 'Invalid meta transaction';
     case 0x6994: // SW_TX_INVALID_OUTPUT
       return 'Invalid output transaction (Output must come first)';
-    case 0x69a1: // SW_BUNDLE_ERROR + INSECURE HASH
-      return 'Insecure hash';
-    case 0x69a2: // SW_BUNDLE_ERROR + NON-ZERO BALANCE
-      return 'Non zero balance';
-    case 0x69a3: // SW_BUNDLE_ERROR + INVALID META TX
-      return 'Invalid meta transaction';
-    case 0x69a4: // SW_BUNDLE_ERROR + INVALID ADDRESS INDEX
-      return 'Invalid input address/index pair(s)';
-    case 0x69a5: // SW_BUNDLE_ERROR + ADDRESS REUSED
-      return 'Address reused';
+
     default:
       // UNKNOWN ERROR CODE
       return error.message;
@@ -96,6 +109,7 @@ class Iota {
   constructor(transport) {
     this.transport = transport;
     this.security = 0;
+    this.pathArray = undefined;
     transport.decorateAppAPIMethods(
       this,
       ['setActiveSeed', 'getAddress', 'signTransaction', 'getAppVersion'],
@@ -104,8 +118,7 @@ class Iota {
   }
 
   /**
-   * Initializes the Ledger with a security level and an IOTA seed based on a
-   * BIP32 path.
+   * Prepares the IOTA seed to be used for subsequent calls
    *
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
@@ -123,16 +136,28 @@ class Iota {
     if (!inputValidator.isSecurity(security)) {
       throw new Error('Invalid security level provided');
     }
+
     this.pathArray = pathArray;
     this.security = security;
 
-    await this._setSeed(pathArray, security);
+    // query the version everytime
+    const config = await this._getAppConfig();
+
+    if (semver.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
+      // use legacy structs
+      this._createPubkeyInput = this._createPubkeyInputLegacy;
+      this._createTxInput = this._createTxInputLegacy;
+
+      await this._setSeed();
+    } else {
+      // reset the state on the Ledger
+      await this._reset(true);
+    }
   }
 
   /**
    * Generates an address index-based.
    * The result depends on the initalized seed and security level.
-   *
    * @param {Integer} index - Index of the address
    * @param {Object} [options]
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
@@ -148,14 +173,14 @@ class Iota {
     if (!inputValidator.isIndex(index)) {
       throw new Error('Invalid Index provided');
     }
+
     options.checksum = options.checksum || false;
     options.display = options.display || false;
 
-    var address = await this._publicKey(index, options.display);
+    const address = await this._publicKey(index, options.display);
     if (options.checksum) {
-      address = addChecksum(address);
+      return addChecksum(address);
     }
-
     return address;
   }
 
@@ -233,28 +258,31 @@ class Iota {
    **/
   async getAppVersion() {
     const config = await this._getAppConfig();
-    return (
-      '' +
-      config.app_version_major +
-      '.' +
-      config.app_version_minor +
-      '.' +
-      config.app_version_patch
-    );
+    return config.app_version;
   }
 
   ///////// Private methods should not be called directly! /////////
 
-  async _setSeed(pathArray, security) {
-    const setSeedInStruct = new Struct()
+  _addSeedFields(struct) {
+    return struct
       .word8('security')
       .word32Ule('pathLength')
-      .array('pathArray', pathArray.length, 'word32Ule');
+      .array('pathArray', this.pathArray.length, 'word32Ule');
+  }
+
+  _initSeedFields(struct) {
+    const fields = struct.fields;
+    fields.security = this.security;
+    fields.pathLength = this.pathArray.length;
+    fields.pathArray = this.pathArray;
+  }
+
+  async _setSeed() {
+    const setSeedInStruct = new Struct();
+    this._addSeedFields(setSeedInStruct);
 
     setSeedInStruct.allocate();
-    setSeedInStruct.fields.security = security;
-    setSeedInStruct.fields.pathLength = pathArray.length;
-    setSeedInStruct.fields.pathArray = pathArray;
+    this._initSeedFields(setSeedInStruct);
 
     await this._sendCommand(
       Commands.INS_SET_SEED,
@@ -265,11 +293,32 @@ class Iota {
     );
   }
 
-  async _publicKey(index, display) {
-    const pubkeyInStruct = new Struct().word32Ule('index');
+  _createPubkeyInputLegacy(index) {
+    let struct = new Struct();
+    struct = struct.word32Ule('index');
 
-    pubkeyInStruct.allocate();
-    pubkeyInStruct.fields.index = index;
+    struct.allocate();
+
+    struct.fields.index = index;
+
+    return struct;
+  }
+
+  _createPubkeyInput(index) {
+    let struct = new Struct();
+    this._addSeedFields(struct);
+    struct = struct.word32Ule('index');
+
+    struct.allocate();
+
+    this._initSeedFields(struct);
+    struct.fields.index = index;
+
+    return struct;
+  }
+
+  async _publicKey(index, display) {
+    const pubkeyInStruct = this._createPubkeyInput(index);
 
     const response = await this._sendCommand(
       Commands.INS_PUBKEY,
@@ -310,8 +359,9 @@ class Iota {
     };
   }
 
-  async _transaction(address, address_idx, value, tag, tx_idx, tx_len, time) {
-    const txInStruct = new Struct()
+  _createTxInputLegacy(address, address_idx, value, tag, tx_idx, tx_len, time) {
+    let struct = new Struct();
+    struct = struct
       .chars('address', 81)
       .word32Ule('address_idx')
       .word64Sle('value')
@@ -320,8 +370,9 @@ class Iota {
       .word32Ule('tx_len')
       .word32Ule('time');
 
-    txInStruct.allocate();
-    const fields = txInStruct.fields;
+    struct.allocate();
+
+    const fields = struct.fields;
     fields.address = address;
     fields.address_idx = address_idx;
     fields.value = value;
@@ -330,14 +381,59 @@ class Iota {
     fields.tx_len = tx_len;
     fields.time = time;
 
-    var timeout = TIMEOUT_CMD_NON_USER_INTERACTION;
+    return struct;
+  }
+
+  _createTxInput(address, address_idx, value, tag, tx_idx, tx_len, time) {
+    let struct = new Struct();
+    if (tx_idx == 0) {
+      this._addSeedFields(struct);
+    }
+    struct = struct
+      .chars('address', 81)
+      .word32Ule('address_idx')
+      .word64Sle('value')
+      .chars('tag', 27)
+      .word32Ule('tx_idx')
+      .word32Ule('tx_len')
+      .word32Ule('time');
+
+    struct.allocate();
+
+    if (tx_idx == 0) {
+      this._initSeedFields(struct);
+    }
+    const fields = struct.fields;
+    fields.address = address;
+    fields.address_idx = address_idx;
+    fields.value = value;
+    fields.tag = tag;
+    fields.tx_idx = tx_idx;
+    fields.tx_len = tx_len;
+    fields.time = time;
+
+    return struct;
+  }
+
+  async _transaction(address, address_idx, value, tag, tx_idx, tx_len, time) {
+    const txInStruct = this._createTxInput(
+      address,
+      address_idx,
+      value,
+      tag,
+      tx_idx,
+      tx_len,
+      time
+    );
+
+    let timeout = TIMEOUT_CMD_NON_USER_INTERACTION;
     if (tx_idx == tx_len) {
       timeout = TIMEOUT_CMD_USER_INTERACTION;
     }
 
     const response = await this._sendCommand(
       Commands.INS_TX,
-      0,
+      tx_idx == 0 ? 0x00 : 0x80,
       0,
       txInStruct.buffer(),
       timeout
@@ -353,7 +449,7 @@ class Iota {
   }
 
   async _getSignatureFragments(index) {
-    var signature = '';
+    let signature = '';
     while (true) {
       const result = await this._sign(index);
       signature += result.signature;
@@ -368,7 +464,7 @@ class Iota {
   }
 
   async _addSignatureFragmentsToBundle(bundle) {
-    for (var i = 0; i < bundle.bundle.length; i++) {
+    for (let i = 0; i < bundle.bundle.length; i++) {
       // only sign inputs
       if (bundle.bundle[i].value >= 0) {
         continue;
@@ -380,7 +476,7 @@ class Iota {
       bundle.bundle[i].signatureMessageFragment = signatureFragments.shift();
 
       // set the signature fragments for all successive meta transactions
-      for (var j = 1; j < this.security; j++) {
+      for (let j = 1; j < this.security; j++) {
         if (++i >= bundle.bundle.length) {
           return;
         }
@@ -394,7 +490,8 @@ class Iota {
   }
 
   async _signBundle(bundle, addressKeyIndices) {
-    var finalized = false;
+    let finalized = false;
+    let bundleHash = '';
     for (const tx of bundle.bundle) {
       const keyIndex = addressKeyIndices[tx.address]
         ? addressKeyIndices[tx.address]
@@ -409,10 +506,14 @@ class Iota {
         tx.timestamp
       );
       finalized = result.finalized;
+      bundleHash = result.bundleHash;
     }
 
     if (!finalized) {
       throw new Error('Bundle not finalized');
+    }
+    if (bundleHash !== bundle.bundle[0].bundle) {
+      throw new Error('Wrong bundle hash');
     }
 
     await this._addSignatureFragmentsToBundle(bundle);
@@ -449,7 +550,7 @@ class Iota {
 
     // use the current time
     const timestamp = Math.floor(Date.now() / 1000);
-    var bundle = new Bundle();
+    let bundle = new Bundle();
 
     transfers.forEach(t =>
       bundle.addEntry(1, t.address, t.value, t.tag, timestamp, -1)
@@ -478,7 +579,7 @@ class Iota {
     bundle.finalize();
 
     // map internal addresses to their index
-    var addressKeyIndices = {};
+    const addressKeyIndices = {};
     inputs.forEach(i => (addressKeyIndices[i.address] = i.keyIndex));
     if (remainder) {
       addressKeyIndices[remainder.address] = remainder.keyIndex;
@@ -488,24 +589,9 @@ class Iota {
     bundle = await this._signBundle(bundle, addressKeyIndices);
 
     // compute and return the corresponding trytes
-    var bundleTrytes = [];
+    const bundleTrytes = [];
     bundle.bundle.forEach(tx => bundleTrytes.push(transactionTrytes(tx)));
     return bundleTrytes.reverse();
-  }
-
-  async _displayAddress(index) {
-    const dispAddrInStruct = new Struct().word32Ule('index');
-
-    dispAddrInStruct.allocate();
-    dispAddrInStruct.fields.index = index;
-
-    await this._sendCommand(
-      Commands.INS_DISP_ADDR,
-      0,
-      0,
-      dispAddrInStruct.buffer(),
-      TIMEOUT_CMD_PUBKEY
-    );
   }
 
   async _getAppConfig() {
@@ -524,11 +610,15 @@ class Iota {
       .word8('app_version_patch');
     getAppConfigOutStruct.setBuffer(response);
 
+    const fields = getAppConfigOutStruct.fields;
     return {
-      app_flags: getAppConfigOutStruct.fields.app_flags,
-      app_version_major: getAppConfigOutStruct.fields.app_version_major,
-      app_version_minor: getAppConfigOutStruct.fields.app_version_minor,
-      app_version_patch: getAppConfigOutStruct.fields.app_version_patch
+      app_flags: fields.app_flags,
+      app_version:
+        fields.app_version_major +
+        '.' +
+        fields.app_version_minor +
+        '.' +
+        fields.app_version_patch
     };
   }
 
