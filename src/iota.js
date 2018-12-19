@@ -29,7 +29,7 @@ const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
 
 const LEGACY_VERSION_RANGE = '<0.5';
-
+const MAX_BUNDLE_SIZE = 8;
 const EMPTY_TAG = '9'.repeat(27);
 
 /**
@@ -144,6 +144,7 @@ class Iota {
     const config = await this._getAppConfig();
 
     if (semver.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
+      this._maxNumInputsRespected = this._maxNumInputsRespectedLegacy;
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
@@ -217,9 +218,11 @@ class Iota {
     if (inputs.length < 1) {
       throw new Error('At least one input required');
     }
-
-    if (transfers.length > 1 || inputs.length > 2) {
-      throw new Error('Unsupported number of transfers or inputs');
+    if (transfers.length > 1) {
+      throw new Error('Unsupported number of transfers');
+    }
+    if (!this._maxNumInputsRespected(inputs.length)) {
+      throw new Error('Unsupported number of inputs');
     }
 
     const balance = inputs.reduce((a, i) => a + i.balance, 0);
@@ -332,6 +335,15 @@ class Iota {
     pubkeyOutStruct.setBuffer(response);
 
     return pubkeyOutStruct.fields.address;
+  }
+
+  _maxNumInputsRespectedLegacy(numInputs) {
+    return numInputs <= 2;
+  }
+
+  _maxNumInputsRespected(numInputs) {
+    // always reserve space for 1 output and the remainder
+    return numInputs <= (MAX_BUNDLE_SIZE - 2) / this.security;
   }
 
   async _sign(index) {

@@ -74,7 +74,7 @@ var TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 var TIMEOUT_CMD_USER_INTERACTION = 120000;
 
 var LEGACY_VERSION_RANGE = '<0.5';
-
+var MAX_BUNDLE_SIZE = 8;
 var EMPTY_TAG = '9'.repeat(27);
 
 /**
@@ -241,26 +241,27 @@ var Iota = function () {
                 config = _context.sent;
 
                 if (!_semver2.default.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
-                  _context.next = 19;
+                  _context.next = 20;
                   break;
                 }
 
+                this._maxNumInputsRespected = this._maxNumInputsRespectedLegacy;
                 // use legacy structs
                 this._createPubkeyInput = this._createPubkeyInputLegacy;
                 this._createTxInput = this._createTxInputLegacy;
 
-                _context.next = 17;
+                _context.next = 18;
                 return this._setSeed();
 
-              case 17:
-                _context.next = 21;
+              case 18:
+                _context.next = 22;
                 break;
 
-              case 19:
-                _context.next = 21;
+              case 20:
+                _context.next = 22;
                 return this._reset(true);
 
-              case 21:
+              case 22:
               case 'end':
                 return _context.stop();
             }
@@ -412,14 +413,22 @@ var Iota = function () {
                 throw new Error('At least one input required');
 
               case 9:
-                if (!(transfers.length > 1 || inputs.length > 2)) {
+                if (!(transfers.length > 1)) {
                   _context3.next = 11;
                   break;
                 }
 
-                throw new Error('Unsupported number of transfers or inputs');
+                throw new Error('Unsupported number of transfers');
 
               case 11:
+                if (this._maxNumInputsRespected(inputs.length)) {
+                  _context3.next = 13;
+                  break;
+                }
+
+                throw new Error('Unsupported number of inputs');
+
+              case 13:
                 balance = inputs.reduce(function (a, i) {
                   return a + i.balance;
                 }, 0);
@@ -428,37 +437,37 @@ var Iota = function () {
                 }, 0);
 
                 if (!(balance === payment)) {
-                  _context3.next = 17;
+                  _context3.next = 19;
                   break;
                 }
 
                 // ignore the remainder, if there is no change
                 remainder = undefined;
-                _context3.next = 19;
+                _context3.next = 21;
                 break;
 
-              case 17:
+              case 19:
                 if (remainder) {
-                  _context3.next = 19;
+                  _context3.next = 21;
                   break;
                 }
 
                 throw new Error('Remainder object required');
 
-              case 19:
+              case 21:
                 if (!remainder) {
-                  _context3.next = 23;
+                  _context3.next = 25;
                   break;
                 }
 
                 if (inputValidator.isRemainderObject(remainder)) {
-                  _context3.next = 22;
+                  _context3.next = 24;
                   break;
                 }
 
                 throw new Error('Invalid remainder object provided');
 
-              case 22:
+              case 24:
 
                 remainder = {
                   address: remainder.address,
@@ -466,19 +475,19 @@ var Iota = function () {
                   keyIndex: remainder.keyIndex
                 };
 
-              case 23:
-                _context3.next = 25;
+              case 25:
+                _context3.next = 27;
                 return this._signTransaction(transfers, inputs, remainder);
 
-              case 25:
+              case 27:
                 trytes = _context3.sent;
-                _context3.next = 28;
+                _context3.next = 30;
                 return this._reset(true);
 
-              case 28:
+              case 30:
                 return _context3.abrupt('return', trytes);
 
-              case 29:
+              case 31:
               case 'end':
                 return _context3.stop();
             }
@@ -639,6 +648,17 @@ var Iota = function () {
 
       return _publicKey;
     }()
+  }, {
+    key: '_maxNumInputsRespectedLegacy',
+    value: function _maxNumInputsRespectedLegacy(numInputs) {
+      return numInputs <= 2;
+    }
+  }, {
+    key: '_maxNumInputsRespected',
+    value: function _maxNumInputsRespected(numInputs) {
+      // always reserve space for 1 output and the remainder
+      return numInputs <= (MAX_BUNDLE_SIZE - 2) / this.security;
+    }
   }, {
     key: '_sign',
     value: function () {
