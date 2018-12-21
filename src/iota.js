@@ -144,7 +144,7 @@ class Iota {
     const config = await this._getAppConfig();
 
     if (semver.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
-      this._maxNumInputsRespected = this._maxNumInputsRespectedLegacy;
+      this._checkMaxNumInputs = this._checkMaxNumInputsLegacy;
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
@@ -221,7 +221,7 @@ class Iota {
     if (transfers.length > 1) {
       throw new Error('Unsupported number of transfers');
     }
-    if (!this._maxNumInputsRespected(inputs.length)) {
+    if (!this._checkMaxNumInputs(inputs.length)) {
       throw new Error('Unsupported number of inputs');
     }
 
@@ -337,11 +337,11 @@ class Iota {
     return pubkeyOutStruct.fields.address;
   }
 
-  _maxNumInputsRespectedLegacy(numInputs) {
+  _checkMaxNumInputsLegacy(numInputs) {
     return numInputs <= 2;
   }
 
-  _maxNumInputsRespected(numInputs) {
+  _checkMaxNumInputs(numInputs) {
     // always reserve space for 1 output and the remainder
     return numInputs <= (MAX_BUNDLE_SIZE - 2) / this.security;
   }

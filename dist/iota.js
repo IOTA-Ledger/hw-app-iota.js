@@ -245,7 +245,7 @@ var Iota = function () {
                   break;
                 }
 
-                this._maxNumInputsRespected = this._maxNumInputsRespectedLegacy;
+                this._checkMaxNumInputs = this._checkMaxNumInputsLegacy;
                 // use legacy structs
                 this._createPubkeyInput = this._createPubkeyInputLegacy;
                 this._createTxInput = this._createTxInputLegacy;
@@ -421,7 +421,7 @@ var Iota = function () {
                 throw new Error('Unsupported number of transfers');
 
               case 11:
-                if (this._maxNumInputsRespected(inputs.length)) {
+                if (this._checkMaxNumInputs(inputs.length)) {
                   _context3.next = 13;
                   break;
                 }
@@ -649,13 +649,13 @@ var Iota = function () {
       return _publicKey;
     }()
   }, {
-    key: '_maxNumInputsRespectedLegacy',
-    value: function _maxNumInputsRespectedLegacy(numInputs) {
+    key: '_checkMaxNumInputsLegacy',
+    value: function _checkMaxNumInputsLegacy(numInputs) {
       return numInputs <= 2;
     }
   }, {
-    key: '_maxNumInputsRespected',
-    value: function _maxNumInputsRespected(numInputs) {
+    key: '_checkMaxNumInputs',
+    value: function _checkMaxNumInputs(numInputs) {
       // always reserve space for 1 output and the remainder
       return numInputs <= (MAX_BUNDLE_SIZE - 2) / this.security;
     }
