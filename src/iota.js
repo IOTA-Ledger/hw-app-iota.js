@@ -29,7 +29,6 @@ const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
 
 const LEGACY_VERSION_RANGE = '<0.5';
-const MAX_BUNDLE_SIZE = 8;
 const EMPTY_TAG = '9'.repeat(27);
 
 /**
@@ -112,7 +111,13 @@ class Iota {
     this.pathArray = undefined;
     transport.decorateAppAPIMethods(
       this,
-      ['setActiveSeed', 'getAddress', 'signTransaction', 'getAppVersion'],
+      [
+        'setActiveSeed',
+        'getAddress',
+        'prepareTransfers',
+        'getAppVersion',
+        'getAppMaxBundleSize'
+      ],
       'IOT'
     );
   }
@@ -144,7 +149,7 @@ class Iota {
     const config = await this._getAppConfig();
 
     if (semver.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
-      this._checkMaxNumInputs = this._checkMaxNumInputsLegacy;
+      this._getAppConfig = this._getAppConfigLegacy;
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
@@ -186,7 +191,7 @@ class Iota {
   }
 
   /**
-   * Returns an array of raw transaction data (trytes) including the signatures.
+   * Prepares the array of raw transaction data (trytes) by generating a bundle and signing the inputs.
    *
    * @param {Object[]} transfers - Transfer objects
    * @param {String} transfers[].address - Tryte-encoded address of recipient, with or without the 9 tryte checksum
@@ -201,7 +206,7 @@ class Iota {
    * @param {Integer} remainder.keyIndex - Index of the address
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
-  async signTransaction(transfers, inputs, remainder) {
+  async prepareTransfers(transfers, inputs, remainder) {
     if (!this.security) {
       throw new Error('Seed not yet initalized');
     }
@@ -220,9 +225,6 @@ class Iota {
     }
     if (transfers.length > 1) {
       throw new Error('Unsupported number of transfers');
-    }
-    if (!this._checkMaxNumInputs(inputs.length)) {
-      throw new Error('Unsupported number of inputs');
     }
 
     const balance = inputs.reduce((a, i) => a + i.balance, 0);
@@ -247,7 +249,7 @@ class Iota {
       };
     }
 
-    const trytes = await this._signTransaction(transfers, inputs, remainder);
+    const trytes = await this._prepareTransfers(transfers, inputs, remainder);
     // reset the bundle
     await this._reset(true);
 
@@ -262,6 +264,17 @@ class Iota {
   async getAppVersion() {
     const config = await this._getAppConfig();
     return config.app_version;
+  }
+
+  /**
+   * Returns the largest supported number of transactions (including meta transactions) in one transfer bundle.
+   *
+   * @returns {Promise<Integer>} Maximum bundle size
+   **/
+  async getAppMaxBundleSize() {
+    const config = await this._getAppConfig();
+    // return value from config or default 8
+    return config.app_max_bundle_size ? config.app_max_bundle_size : 8;
   }
 
   ///////// Private methods should not be called directly! /////////
@@ -335,15 +348,6 @@ class Iota {
     pubkeyOutStruct.setBuffer(response);
 
     return pubkeyOutStruct.fields.address;
-  }
-
-  _checkMaxNumInputsLegacy(numInputs) {
-    return numInputs <= 2;
-  }
-
-  _checkMaxNumInputs(numInputs) {
-    // always reserve space for 1 output and the remainder
-    return numInputs <= (MAX_BUNDLE_SIZE - 2) / this.security;
   }
 
   async _sign(index) {
@@ -543,7 +547,7 @@ class Iota {
     return set.length === transfers.length + inputs.length;
   }
 
-  async _signTransaction(transfers, inputs, remainder) {
+  async _prepareTransfers(transfers, inputs, remainder) {
     // remove checksums
     transfers.forEach(t => (t.address = noChecksum(t.address)));
     inputs.forEach(i => (i.address = noChecksum(i.address)));
@@ -606,7 +610,7 @@ class Iota {
     return bundleTrytes.reverse();
   }
 
-  async _getAppConfig() {
+  async _getAppConfigLegacy() {
     const response = await this._sendCommand(
       Commands.INS_GET_APP_CONFIG,
       0,
@@ -624,6 +628,36 @@ class Iota {
 
     const fields = getAppConfigOutStruct.fields;
     return {
+      app_flags: fields.app_flags,
+      app_version:
+        fields.app_version_major +
+        '.' +
+        fields.app_version_minor +
+        '.' +
+        fields.app_version_patch
+    };
+  }
+
+  async _getAppConfig() {
+    const response = await this._sendCommand(
+      Commands.INS_GET_APP_CONFIG,
+      0,
+      0,
+      undefined,
+      TIMEOUT_CMD_NON_USER_INTERACTION
+    );
+
+    const getAppConfigOutStruct = new Struct()
+      .word8('app_max_bundle_size')
+      .word8('app_flags')
+      .word8('app_version_major')
+      .word8('app_version_minor')
+      .word8('app_version_patch');
+    getAppConfigOutStruct.setBuffer(response);
+
+    const fields = getAppConfigOutStruct.fields;
+    return {
+      app_max_bundle_size: fields.app_max_bundle_size,
       app_flags: fields.app_flags,
       app_version:
         fields.app_version_major +
