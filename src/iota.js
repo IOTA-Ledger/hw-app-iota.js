@@ -107,6 +107,7 @@ function getIOTAStatusMessage(error) {
 class Iota {
   constructor(transport) {
     this.transport = transport;
+    this.config = undefined;
     this.security = 0;
     this.pathArray = undefined;
     transport.decorateAppAPIMethods(
@@ -123,7 +124,7 @@ class Iota {
   }
 
   /**
-   * Prepares the IOTA seed to be used for subsequent calls
+   * Prepares the IOTA seed to be used for subsequent calls.
    *
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
@@ -145,11 +146,10 @@ class Iota {
     this.pathArray = pathArray;
     this.security = security;
 
-    // query the version everytime
-    const config = await this._getAppConfig();
+    // query the app config, if not present
+    this.config = this.config ? this.config : await this._getAppConfig();
 
-    if (semver.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
-      this._getAppConfig = this._getAppConfigLegacy;
+    if (semver.satisfies(this.config.app_version, LEGACY_VERSION_RANGE)) {
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
@@ -164,6 +164,7 @@ class Iota {
   /**
    * Generates an address index-based.
    * The result depends on the initalized seed and security level.
+   *
    * @param {Integer} index - Index of the address
    * @param {Object} [options]
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
@@ -257,22 +258,29 @@ class Iota {
   }
 
   /**
-   * Retrieves version information about the installed application.
+   * Retrieves version information about the installed application from the device.
    *
    * @returns {Promise<String>} Semantic Version string (i.e. MAJOR.MINOR.PATCH)
    **/
   async getAppVersion() {
     const config = await this._getAppConfig();
+    // update the stored config
+    this.config = config;
+
     return config.app_version;
   }
 
   /**
-   * Returns the largest supported number of transactions (including meta transactions) in one transfer bundle.
+   * Retrieves the largest supported number of transactions (including meta transactions)
+   * in one transfer bundle from the device.
    *
    * @returns {Promise<Integer>} Maximum bundle size
    **/
   async getAppMaxBundleSize() {
     const config = await this._getAppConfig();
+    // update the stored config
+    this.config = config;
+
     // return value from config or default 8
     return config.app_max_bundle_size ? config.app_max_bundle_size : 8;
   }
@@ -610,32 +618,25 @@ class Iota {
     return bundleTrytes.reverse();
   }
 
-  async _getAppConfigLegacy() {
-    const response = await this._sendCommand(
-      Commands.INS_GET_APP_CONFIG,
-      0,
-      0,
-      undefined,
-      TIMEOUT_CMD_NON_USER_INTERACTION
-    );
+  _createAppConfigOutputLegacy() {
+    const struct = new Struct()
+      .word8('app_max_bundle_size')
+      .word8('app_version_major')
+      .word8('app_version_minor')
+      .word8('app_version_patch');
 
-    const getAppConfigOutStruct = new Struct()
+    return struct;
+  }
+
+  _createAppConfigOutput() {
+    const struct = new Struct()
+      .word8('app_max_bundle_size')
       .word8('app_flags')
       .word8('app_version_major')
       .word8('app_version_minor')
       .word8('app_version_patch');
-    getAppConfigOutStruct.setBuffer(response);
 
-    const fields = getAppConfigOutStruct.fields;
-    return {
-      app_flags: fields.app_flags,
-      app_version:
-        fields.app_version_major +
-        '.' +
-        fields.app_version_minor +
-        '.' +
-        fields.app_version_patch
-    };
+    return struct;
   }
 
   async _getAppConfig() {
@@ -647,12 +648,11 @@ class Iota {
       TIMEOUT_CMD_NON_USER_INTERACTION
     );
 
-    const getAppConfigOutStruct = new Struct()
-      .word8('app_max_bundle_size')
-      .word8('app_flags')
-      .word8('app_version_major')
-      .word8('app_version_minor')
-      .word8('app_version_patch');
+    let getAppConfigOutStruct = this._createAppConfigOutput();
+    // check whether the response matches the struct plus 2 bytes status code
+    if (response.length < getAppConfigOutStruct.length + 2) {
+      getAppConfigOutStruct = this._createAppConfigOutputLegacy();
+    }
     getAppConfigOutStruct.setBuffer(response);
 
     const fields = getAppConfigOutStruct.fields;

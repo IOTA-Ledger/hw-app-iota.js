@@ -177,13 +177,14 @@ var Iota = function () {
     (0, _classCallCheck3.default)(this, Iota);
 
     this.transport = transport;
+    this.config = undefined;
     this.security = 0;
     this.pathArray = undefined;
     transport.decorateAppAPIMethods(this, ['setActiveSeed', 'getAddress', 'prepareTransfers', 'getAppVersion', 'getAppMaxBundleSize'], 'IOT');
   }
 
   /**
-   * Prepares the IOTA seed to be used for subsequent calls
+   * Prepares the IOTA seed to be used for subsequent calls.
    *
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
@@ -197,7 +198,7 @@ var Iota = function () {
     value: function () {
       var _ref = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee(path) {
         var security = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 2;
-        var pathArray, config;
+        var pathArray;
         return _regenerator2.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -232,35 +233,48 @@ var Iota = function () {
                 this.pathArray = pathArray;
                 this.security = security;
 
-                // query the version everytime
-                _context.next = 11;
-                return this._getAppConfig();
+                // query the app config, if not present
 
-              case 11:
-                config = _context.sent;
-
-                if (!_semver2.default.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
-                  _context.next = 20;
+                if (!this.config) {
+                  _context.next = 13;
                   break;
                 }
 
-                this._getAppConfig = this._getAppConfigLegacy;
+                _context.t0 = this.config;
+                _context.next = 16;
+                break;
+
+              case 13:
+                _context.next = 15;
+                return this._getAppConfig();
+
+              case 15:
+                _context.t0 = _context.sent;
+
+              case 16:
+                this.config = _context.t0;
+
+                if (!_semver2.default.satisfies(this.config.app_version, LEGACY_VERSION_RANGE)) {
+                  _context.next = 24;
+                  break;
+                }
+
                 // use legacy structs
                 this._createPubkeyInput = this._createPubkeyInputLegacy;
                 this._createTxInput = this._createTxInputLegacy;
 
-                _context.next = 18;
+                _context.next = 22;
                 return this._setSeed();
 
-              case 18:
-                _context.next = 22;
+              case 22:
+                _context.next = 26;
                 break;
 
-              case 20:
-                _context.next = 22;
+              case 24:
+                _context.next = 26;
                 return this._reset(true);
 
-              case 22:
+              case 26:
               case 'end':
                 return _context.stop();
             }
@@ -278,6 +292,7 @@ var Iota = function () {
     /**
      * Generates an address index-based.
      * The result depends on the initalized seed and security level.
+     *
      * @param {Integer} index - Index of the address
      * @param {Object} [options]
      * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
@@ -494,7 +509,7 @@ var Iota = function () {
     }()
 
     /**
-     * Retrieves version information about the installed application.
+     * Retrieves version information about the installed application from the device.
      *
      * @returns {Promise<String>} Semantic Version string (i.e. MAJOR.MINOR.PATCH)
      **/
@@ -513,9 +528,13 @@ var Iota = function () {
 
               case 2:
                 config = _context4.sent;
+
+                // update the stored config
+                this.config = config;
+
                 return _context4.abrupt('return', config.app_version);
 
-              case 4:
+              case 5:
               case 'end':
                 return _context4.stop();
             }
@@ -531,7 +550,8 @@ var Iota = function () {
     }()
 
     /**
-     * Returns the largest supported number of transactions (including meta transactions) in one transfer bundle.
+     * Retrieves the largest supported number of transactions (including meta transactions)
+     * in one transfer bundle from the device.
      *
      * @returns {Promise<Integer>} Maximum bundle size
      **/
@@ -550,9 +570,14 @@ var Iota = function () {
 
               case 2:
                 config = _context5.sent;
+
+                // update the stored config
+                this.config = config;
+
+                // return value from config or default 8
                 return _context5.abrupt('return', config.app_max_bundle_size ? config.app_max_bundle_size : 8);
 
-              case 4:
+              case 5:
               case 'end':
                 return _context5.stop();
             }
@@ -1167,7 +1192,21 @@ var Iota = function () {
       return _prepareTransfers;
     }()
   }, {
-    key: '_getAppConfigLegacy',
+    key: '_createAppConfigOutputLegacy',
+    value: function _createAppConfigOutputLegacy() {
+      var struct = new _struct2.default().word8('app_max_bundle_size').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
+
+      return struct;
+    }
+  }, {
+    key: '_createAppConfigOutput',
+    value: function _createAppConfigOutput() {
+      var struct = new _struct2.default().word8('app_max_bundle_size').word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
+
+      return struct;
+    }
+  }, {
+    key: '_getAppConfig',
     value: function () {
       var _ref14 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee14() {
         var response, getAppConfigOutStruct, fields;
@@ -1180,17 +1219,22 @@ var Iota = function () {
 
               case 2:
                 response = _context14.sent;
-                getAppConfigOutStruct = new _struct2.default().word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
+                getAppConfigOutStruct = this._createAppConfigOutput();
+                // check whether the response matches the struct plus 2 bytes status code
 
+                if (response.length < getAppConfigOutStruct.length + 2) {
+                  getAppConfigOutStruct = this._createAppConfigOutputLegacy();
+                }
                 getAppConfigOutStruct.setBuffer(response);
 
                 fields = getAppConfigOutStruct.fields;
                 return _context14.abrupt('return', {
+                  app_max_bundle_size: fields.app_max_bundle_size,
                   app_flags: fields.app_flags,
                   app_version: fields.app_version_major + '.' + fields.app_version_minor + '.' + fields.app_version_patch
                 });
 
-              case 7:
+              case 8:
               case 'end':
                 return _context14.stop();
             }
@@ -1198,47 +1242,8 @@ var Iota = function () {
         }, _callee14, this);
       }));
 
-      function _getAppConfigLegacy() {
-        return _ref14.apply(this, arguments);
-      }
-
-      return _getAppConfigLegacy;
-    }()
-  }, {
-    key: '_getAppConfig',
-    value: function () {
-      var _ref15 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee15() {
-        var response, getAppConfigOutStruct, fields;
-        return _regenerator2.default.wrap(function _callee15$(_context15) {
-          while (1) {
-            switch (_context15.prev = _context15.next) {
-              case 0:
-                _context15.next = 2;
-                return this._sendCommand(Commands.INS_GET_APP_CONFIG, 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
-
-              case 2:
-                response = _context15.sent;
-                getAppConfigOutStruct = new _struct2.default().word8('app_max_bundle_size').word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
-
-                getAppConfigOutStruct.setBuffer(response);
-
-                fields = getAppConfigOutStruct.fields;
-                return _context15.abrupt('return', {
-                  app_max_bundle_size: fields.app_max_bundle_size,
-                  app_flags: fields.app_flags,
-                  app_version: fields.app_version_major + '.' + fields.app_version_minor + '.' + fields.app_version_patch
-                });
-
-              case 7:
-              case 'end':
-                return _context15.stop();
-            }
-          }
-        }, _callee15, this);
-      }));
-
       function _getAppConfig() {
-        return _ref15.apply(this, arguments);
+        return _ref14.apply(this, arguments);
       }
 
       return _getAppConfig;
@@ -1246,25 +1251,25 @@ var Iota = function () {
   }, {
     key: '_reset',
     value: function () {
-      var _ref16 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee16() {
+      var _ref15 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee15() {
         var partial = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-        return _regenerator2.default.wrap(function _callee16$(_context16) {
+        return _regenerator2.default.wrap(function _callee15$(_context15) {
           while (1) {
-            switch (_context16.prev = _context16.next) {
+            switch (_context15.prev = _context15.next) {
               case 0:
-                _context16.next = 2;
+                _context15.next = 2;
                 return this._sendCommand(Commands.INS_RESET, partial ? 1 : 0, 0, undefined, TIMEOUT_CMD_NON_USER_INTERACTION);
 
               case 2:
               case 'end':
-                return _context16.stop();
+                return _context15.stop();
             }
           }
-        }, _callee16, this);
+        }, _callee15, this);
       }));
 
       function _reset() {
-        return _ref16.apply(this, arguments);
+        return _ref15.apply(this, arguments);
       }
 
       return _reset;
@@ -1272,48 +1277,48 @@ var Iota = function () {
   }, {
     key: '_sendCommand',
     value: function () {
-      var _ref17 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee17(ins, p1, p2, data, timeout) {
+      var _ref16 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee16(ins, p1, p2, data, timeout) {
         var transport, smsg, statusCodeStr;
-        return _regenerator2.default.wrap(function _callee17$(_context17) {
+        return _regenerator2.default.wrap(function _callee16$(_context16) {
           while (1) {
-            switch (_context17.prev = _context17.next) {
+            switch (_context16.prev = _context16.next) {
               case 0:
                 transport = this.transport;
-                _context17.prev = 1;
+                _context16.prev = 1;
 
                 transport.setExchangeTimeout(timeout);
-                _context17.next = 5;
+                _context16.next = 5;
                 return transport.send(CLA, ins, p1, p2, data);
 
               case 5:
-                return _context17.abrupt('return', _context17.sent);
+                return _context16.abrupt('return', _context16.sent);
 
               case 8:
-                _context17.prev = 8;
-                _context17.t0 = _context17['catch'](1);
+                _context16.prev = 8;
+                _context16.t0 = _context16['catch'](1);
 
                 // set the message according to the status code
-                smsg = getIOTAStatusMessage(_context17.t0);
+                smsg = getIOTAStatusMessage(_context16.t0);
 
-                _context17.t0.message = 'Ledger device: ' + smsg;
-                if (_context17.t0.statusCode) {
+                _context16.t0.message = 'Ledger device: ' + smsg;
+                if (_context16.t0.statusCode) {
                   // add hex status code if present
-                  statusCodeStr = _context17.t0.statusCode.toString(16);
+                  statusCodeStr = _context16.t0.statusCode.toString(16);
 
-                  _context17.t0.message += ' (0x' + statusCodeStr + ')';
+                  _context16.t0.message += ' (0x' + statusCodeStr + ')';
                 }
-                throw _context17.t0;
+                throw _context16.t0;
 
               case 14:
               case 'end':
-                return _context17.stop();
+                return _context16.stop();
             }
           }
-        }, _callee17, this, [[1, 8]]);
+        }, _callee16, this, [[1, 8]]);
       }));
 
       function _sendCommand(_x26, _x27, _x28, _x29, _x30) {
-        return _ref17.apply(this, arguments);
+        return _ref16.apply(this, arguments);
       }
 
       return _sendCommand;
