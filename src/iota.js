@@ -650,7 +650,7 @@ class Iota {
 
     let getAppConfigOutStruct = this._createAppConfigOutput();
     // check whether the response matches the struct plus 2 bytes status code
-    if (response.length < getAppConfigOutStruct.length + 2) {
+    if (response.length < getAppConfigOutStruct.length() + 2) {
       getAppConfigOutStruct = this._createAppConfigOutputLegacy();
     }
     getAppConfigOutStruct.setBuffer(response);
