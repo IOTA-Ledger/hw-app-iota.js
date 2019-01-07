@@ -620,7 +620,7 @@ class Iota {
 
   _createAppConfigOutputLegacy() {
     const struct = new Struct()
-      .word8('app_max_bundle_size')
+      .word8('app_flags')
       .word8('app_version_major')
       .word8('app_version_minor')
       .word8('app_version_patch');
