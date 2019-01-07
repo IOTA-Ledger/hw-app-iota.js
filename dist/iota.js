@@ -1201,7 +1201,7 @@ var Iota = function () {
   }, {
     key: '_createAppConfigOutput',
     value: function _createAppConfigOutput() {
-      var struct = new _struct2.default().word8('app_max_bundle_size').word8('app_flags').word8('app_version_major').word8('app_version_minor').word8('app_version_patch');
+      var struct = new _struct2.default().word8('app_version_major').word8('app_version_minor').word8('app_version_patch').word8('app_max_bundle_size').word8('app_flags');
 
       return struct;
     }
