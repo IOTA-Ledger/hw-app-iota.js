@@ -29,7 +29,6 @@ const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 120000;
 
 const LEGACY_VERSION_RANGE = '<0.5';
-const MAX_BUNDLE_SIZE = 8;
 const EMPTY_TAG = '9'.repeat(27);
 
 /**
@@ -108,17 +107,24 @@ function getIOTAStatusMessage(error) {
 class Iota {
   constructor(transport) {
     this.transport = transport;
+    this.config = undefined;
     this.security = 0;
     this.pathArray = undefined;
     transport.decorateAppAPIMethods(
       this,
-      ['setActiveSeed', 'getAddress', 'signTransaction', 'getAppVersion'],
+      [
+        'setActiveSeed',
+        'getAddress',
+        'prepareTransfers',
+        'getAppVersion',
+        'getAppMaxBundleSize'
+      ],
       'IOT'
     );
   }
 
   /**
-   * Prepares the IOTA seed to be used for subsequent calls
+   * Prepares the IOTA seed to be used for subsequent calls.
    *
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
@@ -140,11 +146,10 @@ class Iota {
     this.pathArray = pathArray;
     this.security = security;
 
-    // query the version everytime
-    const config = await this._getAppConfig();
+    // query the app config, if not present
+    this.config = this.config ? this.config : await this._getAppConfig();
 
-    if (semver.satisfies(config.app_version, LEGACY_VERSION_RANGE)) {
-      this._checkMaxNumInputs = this._checkMaxNumInputsLegacy;
+    if (semver.satisfies(this.config.app_version, LEGACY_VERSION_RANGE)) {
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
@@ -159,6 +164,7 @@ class Iota {
   /**
    * Generates an address index-based.
    * The result depends on the initalized seed and security level.
+   *
    * @param {Integer} index - Index of the address
    * @param {Object} [options]
    * @param {Boolean} [options.checksum=false] - Append 9 tryte checksum
@@ -186,7 +192,7 @@ class Iota {
   }
 
   /**
-   * Returns an array of raw transaction data (trytes) including the signatures.
+   * Prepares the array of raw transaction data (trytes) by generating a bundle and signing the inputs.
    *
    * @param {Object[]} transfers - Transfer objects
    * @param {String} transfers[].address - Tryte-encoded address of recipient, with or without the 9 tryte checksum
@@ -201,7 +207,7 @@ class Iota {
    * @param {Integer} remainder.keyIndex - Index of the address
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
-  async signTransaction(transfers, inputs, remainder) {
+  async prepareTransfers(transfers, inputs, remainder) {
     if (!this.security) {
       throw new Error('Seed not yet initalized');
     }
@@ -220,9 +226,6 @@ class Iota {
     }
     if (transfers.length > 1) {
       throw new Error('Unsupported number of transfers');
-    }
-    if (!this._checkMaxNumInputs(inputs.length)) {
-      throw new Error('Unsupported number of inputs');
     }
 
     const balance = inputs.reduce((a, i) => a + i.balance, 0);
@@ -247,7 +250,7 @@ class Iota {
       };
     }
 
-    const trytes = await this._signTransaction(transfers, inputs, remainder);
+    const trytes = await this._prepareTransfers(transfers, inputs, remainder);
     // reset the bundle
     await this._reset(true);
 
@@ -255,13 +258,31 @@ class Iota {
   }
 
   /**
-   * Retrieves version information about the installed application.
+   * Retrieves version information about the installed application from the device.
    *
    * @returns {Promise<String>} Semantic Version string (i.e. MAJOR.MINOR.PATCH)
    **/
   async getAppVersion() {
     const config = await this._getAppConfig();
+    // update the stored config
+    this.config = config;
+
     return config.app_version;
+  }
+
+  /**
+   * Retrieves the largest supported number of transactions (including meta transactions)
+   * in one transfer bundle from the device.
+   *
+   * @returns {Promise<Integer>} Maximum bundle size
+   **/
+  async getAppMaxBundleSize() {
+    const config = await this._getAppConfig();
+    // update the stored config
+    this.config = config;
+
+    // return value from config or default 8
+    return config.app_max_bundle_size ? config.app_max_bundle_size : 8;
   }
 
   ///////// Private methods should not be called directly! /////////
@@ -335,15 +356,6 @@ class Iota {
     pubkeyOutStruct.setBuffer(response);
 
     return pubkeyOutStruct.fields.address;
-  }
-
-  _checkMaxNumInputsLegacy(numInputs) {
-    return numInputs <= 2;
-  }
-
-  _checkMaxNumInputs(numInputs) {
-    // always reserve space for 1 output and the remainder
-    return numInputs <= (MAX_BUNDLE_SIZE - 2) / this.security;
   }
 
   async _sign(index) {
@@ -543,7 +555,7 @@ class Iota {
     return set.length === transfers.length + inputs.length;
   }
 
-  async _signTransaction(transfers, inputs, remainder) {
+  async _prepareTransfers(transfers, inputs, remainder) {
     // remove checksums
     transfers.forEach(t => (t.address = noChecksum(t.address)));
     inputs.forEach(i => (i.address = noChecksum(i.address)));
@@ -606,6 +618,27 @@ class Iota {
     return bundleTrytes.reverse();
   }
 
+  _createAppConfigOutputLegacy() {
+    const struct = new Struct()
+      .word8('app_max_bundle_size')
+      .word8('app_version_major')
+      .word8('app_version_minor')
+      .word8('app_version_patch');
+
+    return struct;
+  }
+
+  _createAppConfigOutput() {
+    const struct = new Struct()
+      .word8('app_max_bundle_size')
+      .word8('app_flags')
+      .word8('app_version_major')
+      .word8('app_version_minor')
+      .word8('app_version_patch');
+
+    return struct;
+  }
+
   async _getAppConfig() {
     const response = await this._sendCommand(
       Commands.INS_GET_APP_CONFIG,
@@ -615,15 +648,16 @@ class Iota {
       TIMEOUT_CMD_NON_USER_INTERACTION
     );
 
-    const getAppConfigOutStruct = new Struct()
-      .word8('app_flags')
-      .word8('app_version_major')
-      .word8('app_version_minor')
-      .word8('app_version_patch');
+    let getAppConfigOutStruct = this._createAppConfigOutput();
+    // check whether the response matches the struct plus 2 bytes status code
+    if (response.length < getAppConfigOutStruct.length() + 2) {
+      getAppConfigOutStruct = this._createAppConfigOutputLegacy();
+    }
     getAppConfigOutStruct.setBuffer(response);
 
     const fields = getAppConfigOutStruct.fields;
     return {
+      app_max_bundle_size: fields.app_max_bundle_size,
       app_flags: fields.app_flags,
       app_version:
         fields.app_version_major +

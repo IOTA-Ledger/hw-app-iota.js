@@ -11,7 +11,7 @@ import Iota from 'hw-app-iota';
 const getAddress = async () => {
   const transport = await Transport.create();
   const iota = new Iota(transport);
-  await iota.setActiveSeed("44'/4218'/0'/0/0");
+  await iota.setActiveSeed("44'/4218'/0'/0'");
   return await iota.getAddress(0, {checksum: true});
 };
 
@@ -24,10 +24,10 @@ import Transport from "@ledgerhq/hw-transport-node-hid";
 // import Transport from "@ledgerhq/hw-transport-u2f"; // for browser
 import Iota from 'hw-app-iota';
 
-const signTransaction = async () => {
+const prepareTransfers = async () => {
   const transport = await Transport.create();
   const iota = new Iota(transport);
-  await iota.setActiveSeed("44'/4218'/0'/0/0");
+  await iota.setActiveSeed("44'/4218'/0'/0'");
 
   const transfers = [{
     address: 'ANADDRESS',
@@ -39,10 +39,10 @@ const signTransaction = async () => {
     balance: 10000,
     keyIndex: 4
   }];
-  return await iota.signTransaction(transfers, inputs);
+  return await iota.prepareTransfers(transfers, inputs);
 };
 
-signTransaction().then(t => console.log(t));
+prepareTransfers().then(t => console.log(t));
 ```
 
 ## API Reference
@@ -53,14 +53,14 @@ Class for the interaction with the Ledger IOTA application.
 * [~Iota](#module_hw-app-iota..Iota)
     * [.setActiveSeed(path, [security])](#module_hw-app-iota..Iota+setActiveSeed)
     * [.getAddress(index, [options])](#module_hw-app-iota..Iota+getAddress) ⇒ <code>Promise.&lt;String&gt;</code>
-    * [.signTransaction(transfers, inputs, [remainder])](#module_hw-app-iota..Iota+signTransaction) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
+    * [.prepareTransfers(transfers, inputs, [remainder])](#module_hw-app-iota..Iota+prepareTransfers) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
     * [.getAppVersion()](#module_hw-app-iota..Iota+getAppVersion) ⇒ <code>Promise.&lt;String&gt;</code>
+    * [.getAppMaxBundleSize()](#module_hw-app-iota..Iota+getAppMaxBundleSize) ⇒ <code>Promise.&lt;Integer&gt;</code>
 
 <a name="module_hw-app-iota..Iota+setActiveSeed"></a>
 
 #### iota.setActiveSeed(path, [security])
-Initializes the Ledger with a security level and an IOTA seed based on a
-BIP32 path.
+Prepares the IOTA seed to be used for subsequent calls.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -69,7 +69,7 @@ BIP32 path.
 
 **Example**  
 ```js
-iota.setActiveSeed("44'/4218'/0'/0/0", 2);
+iota.setActiveSeed("44'/4218'/0'/0'", 2);
 ```
 <a name="module_hw-app-iota..Iota+getAddress"></a>
 
@@ -90,10 +90,10 @@ The result depends on the initalized seed and security level.
 ```js
 iota.getAddress(0, { checksum: true });
 ```
-<a name="module_hw-app-iota..Iota+signTransaction"></a>
+<a name="module_hw-app-iota..Iota+prepareTransfers"></a>
 
-#### iota.signTransaction(transfers, inputs, [remainder]) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
-Returns an array of raw transaction data (trytes) including the signatures.
+#### iota.prepareTransfers(transfers, inputs, [remainder]) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
+Prepares the array of raw transaction data (trytes) by generating a bundle and signing the inputs.
 
 **Returns**: <code>Promise.&lt;Array.&lt;String&gt;&gt;</code> - Transaction trytes of 2673 trytes per transaction  
 
@@ -114,6 +114,14 @@ Returns an array of raw transaction data (trytes) including the signatures.
 <a name="module_hw-app-iota..Iota+getAppVersion"></a>
 
 #### iota.getAppVersion() ⇒ <code>Promise.&lt;String&gt;</code>
-Retrieves version information about the installed application.
+Retrieves version information about the installed application from the device.
 
 **Returns**: <code>Promise.&lt;String&gt;</code> - Semantic Version string (i.e. MAJOR.MINOR.PATCH)  
+<a name="module_hw-app-iota..Iota+getAppMaxBundleSize"></a>
+
+#### iota.getAppMaxBundleSize() ⇒ <code>Promise.&lt;Integer&gt;</code>
+Retrieves the largest supported number of transactions (including meta transactions)
+in one transfer bundle from the device.
+
+**Returns**: <code>Promise.&lt;Integer&gt;</code> - Maximum bundle size  
+<a name="module_hw-app-iota..getIOTAStatusMessage"></a>
