@@ -3,10 +3,11 @@
   "version": "0.6.1",
   "scripts": {
     "clean": "rimraf dist",
-    "format": "prettier --single-quote --write src/**/*.js",
+    "format": "prettier --single-quote --write src/**/*.js test/**/*.js",
     "lint": "eslint src",
     "build": "babel src -d dist",
-    "prepublishOnly": "npm run clean && npm run lint && npm run build"
+    "test": "npm run build && mocha --require babel-polyfill",
+    "prepublishOnly": "npm run clean && npm run lint && npm run test && npm run build"
   },
   "description": "Ledger Hardware Wallet IOTA Application API",
   "main": "dist/iota.js",
@@ -31,10 +32,14 @@
     "struct": "0.0.12"
   },
   "devDependencies": {
+    "@ledgerhq/hw-transport-mocker": "^4.35.0",
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
+    "chai": "^4.2.0",
     "eslint": "^5.5.0",
+    "mocha": "^5.2.0",
     "prettier": "^1.14.2",
     "rimraf": "^2.6.2"
   }
