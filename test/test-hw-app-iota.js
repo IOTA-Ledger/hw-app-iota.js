@@ -5,11 +5,17 @@ const {
   RecordStore,
   createTransportReplayer
 } = require('@ledgerhq/hw-transport-mocker');
+const { createPrepareTransfers, generateAddress } = require('@iota/core');
 
+const HASH_LENGTH = 81;
+const SIGNATURE_FRAGMENT_LENGTH = 27 * HASH_LENGTH;
+const NULL_HASH_TRYTES = '9'.repeat(HASH_LENGTH);
+
+// use the library
 const { default: Iota } = require('../dist/iota');
 
 const EXPECTED_RESULTS = {
-  address: '9'.repeat(81),
+  address: NULL_HASH_TRYTES,
   version: '0.5.0',
   maxBundleSize: 8
 };
@@ -56,5 +62,70 @@ describe('hw-app-iota', function() {
     const size = await iota.getAppMaxBundleSize();
 
     expect(size).to.equal(EXPECTED_RESULTS.maxBundleSize);
+  });
+
+  it('can prepare transfers', async function() {
+    const seed = NULL_HASH_TRYTES;
+    const security = 2;
+    const now = () => 1000;
+
+    const inputIndex = 0;
+    const remainderIndex = 1;
+
+    const inputAddress = generateAddress(seed, inputIndex, security, false);
+    const remainderAddress = generateAddress(
+      seed,
+      remainderIndex,
+      security,
+      false
+    );
+
+    const transfers = [
+      {
+        address: NULL_HASH_TRYTES,
+        value: 1,
+        tag: '9A9999999999999999999999999',
+        message: ''
+      }
+    ];
+    const inputs = [
+      {
+        address: inputAddress,
+        keyIndex: inputIndex,
+        security,
+        balance: 2
+      }
+    ];
+
+    // prepare transfers offline
+    const prepareTransfers = createPrepareTransfers(undefined, now);
+
+    const expected = await prepareTransfers(seed, transfers, {
+      inputs,
+      remainderAddress,
+      security
+    });
+
+    class MyIota extends Iota {
+      async _sign(index, _) {
+        // read the entire signature fragment in one APDU command
+        return await super._sign(index, security * SIGNATURE_FRAGMENT_LENGTH);
+      }
+    }
+
+    const iota = new MyIota(transport);
+    await iota.setActiveSeed("44'/4218'/0'/0'", security);
+
+    const actual = await iota.prepareTransfers(
+      transfers,
+      inputs,
+      {
+        address: remainderAddress,
+        keyIndex: remainderIndex
+      },
+      now
+    );
+
+    expect(actual).to.deep.equal(expected);
   });
 });
