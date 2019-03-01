@@ -29,7 +29,10 @@ const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 150000;
 
 const LEGACY_VERSION_RANGE = '<0.5';
-const EMPTY_TAG = '9'.repeat(27);
+const HASH_LENGTH = 81;
+const TAG_LENGTH = 27;
+const SIGNATURE_FRAGMENT_SLICE_LENGTH = 3 * HASH_LENGTH;
+const EMPTY_TAG = '9'.repeat(TAG_LENGTH);
 
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
@@ -205,9 +208,10 @@ class Iota {
    * @param {Object} [remainder] - Destination for sending the remainder value (of the inputs) to.
    * @param {String} remainder.address - Tryte-encoded address, with or without the 9 tryte checksum
    * @param {Integer} remainder.keyIndex - Index of the address
+   * @param {Function} [now = Date.now()] - Function to get the milliseconds since the UNIX epoch for timestamps.
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
-  async prepareTransfers(transfers, inputs, remainder) {
+  async prepareTransfers(transfers, inputs, remainder, now = () => Date.now()) {
     if (!this.security) {
       throw new Error('Seed not yet initalized');
     }
@@ -250,7 +254,12 @@ class Iota {
       };
     }
 
-    const trytes = await this._prepareTransfers(transfers, inputs, remainder);
+    const trytes = await this._prepareTransfers(
+      transfers,
+      inputs,
+      remainder,
+      now
+    );
     // reset the bundle
     await this._reset(true);
 
@@ -358,7 +367,7 @@ class Iota {
     return pubkeyOutStruct.fields.address;
   }
 
-  async _sign(index) {
+  async _sign(index, signatureFragmentLength) {
     const signInStruct = new Struct().word32Ule('index');
 
     signInStruct.allocate();
@@ -373,7 +382,7 @@ class Iota {
     );
 
     const signOutStruct = new Struct()
-      .chars('signature', 243)
+      .chars('signature', signatureFragmentLength)
       .word8Sle('fragmentsRemaining');
     signOutStruct.setBuffer(response);
 
@@ -475,10 +484,10 @@ class Iota {
   async _getSignatureFragments(index) {
     let signature = '';
     while (true) {
-      const result = await this._sign(index);
+      const result = await this._sign(index, SIGNATURE_FRAGMENT_SLICE_LENGTH);
       signature += result.signature;
 
-      if (!result.fragmentsRemaining) {
+      if (result.fragmentsRemaining == 0) {
         break;
       }
     }
@@ -555,7 +564,7 @@ class Iota {
     return set.length === transfers.length + inputs.length;
   }
 
-  async _prepareTransfers(transfers, inputs, remainder) {
+  async _prepareTransfers(transfers, inputs, remainder, now) {
     // remove checksums
     transfers.forEach(t => (t.address = noChecksum(t.address)));
     inputs.forEach(i => (i.address = noChecksum(i.address)));
@@ -573,7 +582,7 @@ class Iota {
     inputs.forEach(i => (i.security = this.security));
 
     // use the current time
-    const timestamp = Math.floor(Date.now() / 1000);
+    const timestamp = Math.floor(now() / 1000);
     let bundle = new Bundle();
 
     transfers.forEach(t =>

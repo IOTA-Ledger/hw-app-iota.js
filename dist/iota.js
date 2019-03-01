@@ -74,7 +74,10 @@ var TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 var TIMEOUT_CMD_USER_INTERACTION = 150000;
 
 var LEGACY_VERSION_RANGE = '<0.5';
-var EMPTY_TAG = '9'.repeat(27);
+var HASH_LENGTH = 81;
+var TAG_LENGTH = 27;
+var SIGNATURE_FRAGMENT_SLICE_LENGTH = 3 * HASH_LENGTH;
+var EMPTY_TAG = '9'.repeat(TAG_LENGTH);
 
 /**
  * Provides meaningful responses to error codes returned by IOTA Ledger app
@@ -377,6 +380,7 @@ var Iota = function () {
      * @param {Object} [remainder] - Destination for sending the remainder value (of the inputs) to.
      * @param {String} remainder.address - Tryte-encoded address, with or without the 9 tryte checksum
      * @param {Integer} remainder.keyIndex - Index of the address
+     * @param {Function} [now = Date.now()] - Function to get the milliseconds since the UNIX epoch for timestamps.
      * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
      */
 
@@ -384,6 +388,9 @@ var Iota = function () {
     key: 'prepareTransfers',
     value: function () {
       var _ref3 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee3(transfers, inputs, remainder) {
+        var now = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : function () {
+          return Date.now();
+        };
         var balance, payment, trytes;
         return _regenerator2.default.wrap(function _callee3$(_context3) {
           while (1) {
@@ -483,7 +490,7 @@ var Iota = function () {
 
               case 23:
                 _context3.next = 25;
-                return this._prepareTransfers(transfers, inputs, remainder);
+                return this._prepareTransfers(transfers, inputs, remainder, now);
 
               case 25:
                 trytes = _context3.sent;
@@ -501,7 +508,7 @@ var Iota = function () {
         }, _callee3, this);
       }));
 
-      function prepareTransfers(_x5, _x6, _x7) {
+      function prepareTransfers(_x6, _x7, _x8) {
         return _ref3.apply(this, arguments);
       }
 
@@ -695,7 +702,7 @@ var Iota = function () {
         }, _callee7, this);
       }));
 
-      function _publicKey(_x8, _x9) {
+      function _publicKey(_x9, _x10) {
         return _ref7.apply(this, arguments);
       }
 
@@ -704,7 +711,7 @@ var Iota = function () {
   }, {
     key: '_sign',
     value: function () {
-      var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(index) {
+      var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(index, signatureFragmentLength) {
         var signInStruct, response, signOutStruct;
         return _regenerator2.default.wrap(function _callee8$(_context8) {
           while (1) {
@@ -721,7 +728,7 @@ var Iota = function () {
 
               case 5:
                 response = _context8.sent;
-                signOutStruct = new _struct2.default().chars('signature', 243).word8Sle('fragmentsRemaining');
+                signOutStruct = new _struct2.default().chars('signature', signatureFragmentLength).word8Sle('fragmentsRemaining');
 
                 signOutStruct.setBuffer(response);
 
@@ -738,7 +745,7 @@ var Iota = function () {
         }, _callee8, this);
       }));
 
-      function _sign(_x10) {
+      function _sign(_x11, _x12) {
         return _ref8.apply(this, arguments);
       }
 
@@ -826,7 +833,7 @@ var Iota = function () {
         }, _callee9, this);
       }));
 
-      function _transaction(_x11, _x12, _x13, _x14, _x15, _x16, _x17) {
+      function _transaction(_x13, _x14, _x15, _x16, _x17, _x18, _x19) {
         return _ref9.apply(this, arguments);
       }
 
@@ -850,14 +857,14 @@ var Iota = function () {
                 }
 
                 _context10.next = 4;
-                return this._sign(index);
+                return this._sign(index, SIGNATURE_FRAGMENT_SLICE_LENGTH);
 
               case 4:
                 result = _context10.sent;
 
                 signature += result.signature;
 
-                if (result.fragmentsRemaining) {
+                if (!(result.fragmentsRemaining == 0)) {
                   _context10.next = 8;
                   break;
                 }
@@ -879,7 +886,7 @@ var Iota = function () {
         }, _callee10, this);
       }));
 
-      function _getSignatureFragments(_x18) {
+      function _getSignatureFragments(_x20) {
         return _ref10.apply(this, arguments);
       }
 
@@ -961,7 +968,7 @@ var Iota = function () {
         }, _callee11, this);
       }));
 
-      function _addSignatureFragmentsToBundle(_x19) {
+      function _addSignatureFragmentsToBundle(_x21) {
         return _ref11.apply(this, arguments);
       }
 
@@ -1072,7 +1079,7 @@ var Iota = function () {
         }, _callee12, this, [[5, 20, 24, 32], [25,, 27, 31]]);
       }));
 
-      function _signBundle(_x20, _x21) {
+      function _signBundle(_x22, _x23) {
         return _ref12.apply(this, arguments);
       }
 
@@ -1097,7 +1104,7 @@ var Iota = function () {
   }, {
     key: '_prepareTransfers',
     value: function () {
-      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13(transfers, inputs, remainder) {
+      var _ref13 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee13(transfers, inputs, remainder, now) {
         var _this = this;
 
         var timestamp, bundle, addressKeyIndices, bundleTrytes;
@@ -1135,7 +1142,7 @@ var Iota = function () {
                 });
 
                 // use the current time
-                timestamp = Math.floor(Date.now() / 1000);
+                timestamp = Math.floor(now() / 1000);
                 bundle = new _bundle2.default();
 
 
@@ -1185,7 +1192,7 @@ var Iota = function () {
         }, _callee13, this);
       }));
 
-      function _prepareTransfers(_x22, _x23, _x24) {
+      function _prepareTransfers(_x24, _x25, _x26, _x27) {
         return _ref13.apply(this, arguments);
       }
 
@@ -1317,7 +1324,7 @@ var Iota = function () {
         }, _callee16, this, [[1, 8]]);
       }));
 
-      function _sendCommand(_x26, _x27, _x28, _x29, _x30) {
+      function _sendCommand(_x29, _x30, _x31, _x32, _x33) {
         return _ref16.apply(this, arguments);
       }
 
