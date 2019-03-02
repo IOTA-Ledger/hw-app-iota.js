@@ -132,7 +132,7 @@ class Iota {
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
    * @param {Number} [security=2] - IOTA security level to use
    * @example
-   * iota.setActiveSeed("44'/4218'/0'/0/0", 2);
+   * iota.setActiveSeed("44'/4218'/0'/0'", 2);
    **/
   async setActiveSeed(path, security = 2) {
     if (!bippath.validateString(path)) {

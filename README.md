@@ -69,7 +69,7 @@ Prepares the IOTA seed to be used for subsequent calls.
 
 **Example**  
 ```js
-iota.setActiveSeed("44'/4218'/0'/0/0", 2);
+iota.setActiveSeed("44'/4218'/0'/0'", 2);
 ```
 <a name="module_hw-app-iota..Iota+getAddress"></a>
 
