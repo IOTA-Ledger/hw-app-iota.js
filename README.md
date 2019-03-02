@@ -53,7 +53,7 @@ Class for the interaction with the Ledger IOTA application.
 * [~Iota](#module_hw-app-iota..Iota)
     * [.setActiveSeed(path, [security])](#module_hw-app-iota..Iota+setActiveSeed)
     * [.getAddress(index, [options])](#module_hw-app-iota..Iota+getAddress) ⇒ <code>Promise.&lt;String&gt;</code>
-    * [.prepareTransfers(transfers, inputs, [remainder])](#module_hw-app-iota..Iota+prepareTransfers) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
+        * [.prepareTransfers(transfers, inputs, [remainder], [now])](#module_hw-app-iota..Iota+prepareTransfers) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
     * [.getAppVersion()](#module_hw-app-iota..Iota+getAppVersion) ⇒ <code>Promise.&lt;String&gt;</code>
     * [.getAppMaxBundleSize()](#module_hw-app-iota..Iota+getAppMaxBundleSize) ⇒ <code>Promise.&lt;Integer&gt;</code>
 
@@ -92,7 +92,7 @@ iota.getAddress(0, { checksum: true });
 ```
 <a name="module_hw-app-iota..Iota+prepareTransfers"></a>
 
-#### iota.prepareTransfers(transfers, inputs, [remainder]) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
+#### iota.prepareTransfers(transfers, inputs, [remainder], [now]) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
 Prepares the array of raw transaction data (trytes) by generating a bundle and signing the inputs.
 
 **Returns**: <code>Promise.&lt;Array.&lt;String&gt;&gt;</code> - Transaction trytes of 2673 trytes per transaction  
