@@ -53,14 +53,14 @@ Class for the interaction with the Ledger IOTA application.
 * [~Iota](#module_hw-app-iota..Iota)
     * [.setActiveSeed(path, [security])](#module_hw-app-iota..Iota+setActiveSeed)
     * [.getAddress(index, [options])](#module_hw-app-iota..Iota+getAddress) ⇒ <code>Promise.&lt;String&gt;</code>
-        * [.prepareTransfers(transfers, inputs, [remainder], [now])](#module_hw-app-iota..Iota+prepareTransfers) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
+    * [.prepareTransfers(transfers, inputs, [remainder], [now])](#module_hw-app-iota..Iota+prepareTransfers) ⇒ <code>Promise.&lt;Array.&lt;String&gt;&gt;</code>
     * [.getAppVersion()](#module_hw-app-iota..Iota+getAppVersion) ⇒ <code>Promise.&lt;String&gt;</code>
     * [.getAppMaxBundleSize()](#module_hw-app-iota..Iota+getAppMaxBundleSize) ⇒ <code>Promise.&lt;Integer&gt;</code>
 
 <a name="module_hw-app-iota..Iota+setActiveSeed"></a>
 
 #### iota.setActiveSeed(path, [security])
-Prepares the IOTA seed to be used for subsequent calls.
+Prepares the IOTA seed to be used for subsequent calls. 
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -69,7 +69,7 @@ Prepares the IOTA seed to be used for subsequent calls.
 
 **Example**  
 ```js
-iota.setActiveSeed("44'/4218'/0'/0'", 2);
+iota.setActiveSeed("44'/4218'/0'/0/0", 2);
 ```
 <a name="module_hw-app-iota..Iota+getAddress"></a>
 
@@ -125,4 +125,3 @@ Retrieves the largest supported number of transactions (including meta transacti
 in one transfer bundle from the device.
 
 **Returns**: <code>Promise.&lt;Integer&gt;</code> - Maximum bundle size  
-<a name="module_hw-app-iota..getIOTAStatusMessage"></a>
