@@ -97,19 +97,20 @@ Prepares the array of raw transaction data (trytes) by generating a bundle and s
 
 **Returns**: <code>Promise.&lt;Array.&lt;String&gt;&gt;</code> - Transaction trytes of 2673 trytes per transaction  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| transfers | <code>Array.&lt;Object&gt;</code> | Transfer objects |
-| transfers[].address | <code>String</code> | Tryte-encoded address of recipient, with or without the 9 tryte checksum |
-| transfers[].value | <code>Integer</code> | Value to be transferred |
-| transfers[].tag | <code>String</code> | Tryte-encoded tag. Maximum value is 27 trytes. |
-| inputs | <code>Array.&lt;Object&gt;</code> | Inputs used for funding the transfer |
-| inputs[].address | <code>String</code> | Tryte-encoded source address, with or without the 9 tryte checksum |
-| inputs[].balance | <code>Integer</code> | Balance of that input |
-| inputs[].keyIndex | <code>String</code> | Index of the address |
-| [remainder] | <code>Object</code> | Destination for sending the remainder value (of the inputs) to. |
-| remainder.address | <code>String</code> | Tryte-encoded address, with or without the 9 tryte checksum |
-| remainder.keyIndex | <code>Integer</code> | Index of the address |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| transfers | <code>Array.&lt;Object&gt;</code> |  | Transfer objects |
+| transfers[].address | <code>String</code> |  | Tryte-encoded address of recipient, with or without the 9 tryte checksum |
+| transfers[].value | <code>Integer</code> |  | Value to be transferred |
+| transfers[].tag | <code>String</code> |  | Tryte-encoded tag. Maximum value is 27 trytes. |
+| inputs | <code>Array.&lt;Object&gt;</code> |  | Inputs used for funding the transfer |
+| inputs[].address | <code>String</code> |  | Tryte-encoded source address, with or without the 9 tryte checksum |
+| inputs[].balance | <code>Integer</code> |  | Balance of that input |
+| inputs[].keyIndex | <code>String</code> |  | Index of the address |
+| [remainder] | <code>Object</code> |  | Destination for sending the remainder value (of the inputs) to. |
+| remainder.address | <code>String</code> |  | Tryte-encoded address, with or without the 9 tryte checksum |
+| remainder.keyIndex | <code>Integer</code> |  | Index of the address |
+| [now] | <code>function</code> | <code>Date.now()</code> | Function to get the milliseconds since the UNIX epoch for timestamps. |
 
 <a name="module_hw-app-iota..Iota+getAppVersion"></a>
 
