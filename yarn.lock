@@ -38,17 +38,17 @@
     "@iota/signing" "^1.0.0-beta.11"
 
 "@iota/checksum@^1.0.0-beta.11":
-  version "1.0.0-beta.11"
-  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.11.tgz#a127404b04f638cb7bc43a141943d526555841ab"
-  integrity sha512-u2WR1kBAAJMoY68CGxnURr36nBz/DSKqqWgNfT9LdG3LI/Ai2CbAPUBdfZ0qKo3Z3HK9psyCyHgk6NDGyz8n6g==
+  version "1.0.0-beta.12"
+  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.12.tgz#cdc82394099f7a7b154cf19207f31631a9228c0a"
+  integrity sha512-K2Q3bw4P7HJkPxeNjpulCsq/d3c9w2g+wbwYJxi51a18pnlPpd5AyBam9xfNXo8m/S47mmPuctraexgm+Q0Y1A==
   dependencies:
-    "@iota/converter" "^1.0.0-beta.11"
-    "@iota/kerl" "^1.0.0-beta.11"
+    "@iota/converter" "^1.0.0-beta.12"
+    "@iota/kerl" "^1.0.0-beta.12"
 
-"@iota/converter@^1.0.0-beta.11":
-  version "1.0.0-beta.11"
-  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.11.tgz#64c661d60729e7877a72b248ef916c9de89971e0"
-  integrity sha512-euKqd0z3So/c0dz0obOcfXhJfB1riZd2nal5oM/R7uW63e4MZUP0A0libbPzGe4iHGX9XqkfAV6j2bhMdzkCFQ==
+"@iota/converter@^1.0.0-beta.11", "@iota/converter@^1.0.0-beta.12":
+  version "1.0.0-beta.12"
+  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.12.tgz#873dfacbef2ac18aec814100c10f50568d54ef51"
+  integrity sha512-h12Wk72/lCMHOFLE7B6TctMizhGcDQspaYIZlqwQTdij3mPynfTrlyAIJhJw26cf3sNER9sOwR6FgVgSpVYUnQ==
 
 "@iota/core@^1.0.0-beta.11":
   version "1.0.0-beta.11"
@@ -83,10 +83,10 @@
     bluebird "^3.5.1"
     cross-fetch "^3.0.0"
 
-"@iota/kerl@^1.0.0-beta.11":
-  version "1.0.0-beta.11"
-  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.11.tgz#b1ec7a44e1dd3b3e0c11f48522ad35407bc72846"
-  integrity sha512-Yut/cl5xiBUA4wtVctgJDWtRltahSfLN8sWmRLQF7uqL/qngCRZ7iVtUehyPuXR4UlVzqU1kV/uMeuHKth2bWw==
+"@iota/kerl@^1.0.0-beta.11", "@iota/kerl@^1.0.0-beta.12":
+  version "1.0.0-beta.12"
+  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.12.tgz#14eeb6f04b9f7fc025c23059e9d3473a7c5ed84e"
+  integrity sha512-Af/MxEBvKfkSkrjr87pl4y6qBvHzMGZWTsddBLP3iYJXY+6NW9kHKzO0UEwS/07eiS1y3bKsjP+WFgrnHN8f6Q==
   dependencies:
     "@types/crypto-js" "^3.1.38"
     crypto-js "^3.1.9-1"
