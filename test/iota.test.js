@@ -42,11 +42,11 @@ describe('Iota', function() {
     const recordingFileName = path.join(
       path.dirname(__filename),
       'recordings',
-      recordingName + '.json'
+      recordingName + '.txt'
     );
 
-    const recording = JSON.parse(fs.readFileSync(recordingFileName, 'utf-8'));
-    const recordStore = RecordStore.fromObject(recording);
+    const recording = fs.readFileSync(recordingFileName, 'utf-8');
+    const recordStore = RecordStore.fromString(recording);
     const Transport = createTransportReplayer(recordStore);
 
     transport = await Transport.open();
