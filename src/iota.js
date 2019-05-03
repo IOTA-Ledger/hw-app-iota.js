@@ -571,21 +571,28 @@ class Iota {
   }
 
   async _prepareTransfers(transfers, inputs, remainder, now) {
-    // remove checksums
-    transfers.forEach(t => (t.address = noChecksum(t.address)));
-    inputs.forEach(i => (i.address = noChecksum(i.address)));
+    transfers = transfers.map(t => ({
+      ...t,
+      // remove checksum
+      address: noChecksum(t.address),
+      // pad tag
+      tag: t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG
+    }));
+    inputs = inputs.map(i => ({
+      ...i,
+      // remove checksum
+      address: noChecksum(i.address),
+      // set correct security level
+      security: this.security
+    }));
     if (remainder) {
-      remainder.address = noChecksum(remainder.address);
+      // remove checksum
+      remainder = { ...remainder, address: noChecksum(remainder.address) };
     }
 
     if (this._hasDuplicateAddresses(transfers, inputs, remainder)) {
       throw new Error('transaction must not contain duplicate addresses');
     }
-
-    // pad transfer tags
-    transfers.forEach(t => (t.tag = t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG));
-    // set correct security level
-    inputs.forEach(i => (i.security = this.security));
 
     // use the current time
     const timestamp = Math.floor(now() / 1000);

@@ -4,6 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _extends2 = require('babel-runtime/helpers/extends');
+
+var _extends3 = _interopRequireDefault(_extends2);
+
 var _set = require('babel-runtime/core-js/set');
 
 var _set2 = _interopRequireDefault(_set);
@@ -1117,15 +1121,25 @@ var Iota = function () {
           while (1) {
             switch (_context13.prev = _context13.next) {
               case 0:
-                // remove checksums
-                transfers.forEach(function (t) {
-                  return t.address = (0, _utils.noChecksum)(t.address);
+                transfers = transfers.map(function (t) {
+                  return (0, _extends3.default)({}, t, {
+                    // remove checksum
+                    address: (0, _utils.noChecksum)(t.address),
+                    // pad tag
+                    tag: t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG
+                  });
                 });
-                inputs.forEach(function (i) {
-                  return i.address = (0, _utils.noChecksum)(i.address);
+                inputs = inputs.map(function (i) {
+                  return (0, _extends3.default)({}, i, {
+                    // remove checksum
+                    address: (0, _utils.noChecksum)(i.address),
+                    // set correct security level
+                    security: _this.security
+                  });
                 });
                 if (remainder) {
-                  remainder.address = (0, _utils.noChecksum)(remainder.address);
+                  // remove checksum
+                  remainder = (0, _extends3.default)({}, remainder, { address: (0, _utils.noChecksum)(remainder.address) });
                 }
 
                 if (!this._hasDuplicateAddresses(transfers, inputs, remainder)) {
@@ -1136,15 +1150,6 @@ var Iota = function () {
                 throw new Error('transaction must not contain duplicate addresses');
 
               case 5:
-
-                // pad transfer tags
-                transfers.forEach(function (t) {
-                  return t.tag = t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG;
-                });
-                // set correct security level
-                inputs.forEach(function (i) {
-                  return i.security = _this.security;
-                });
 
                 // use the current time
                 timestamp = Math.floor(now() / 1000);
@@ -1174,10 +1179,10 @@ var Iota = function () {
                 }
 
                 // sign the bundle on the ledger
-                _context13.next = 19;
+                _context13.next = 17;
                 return this._signBundle(bundle, addressKeyIndices);
 
-              case 19:
+              case 17:
                 bundle = _context13.sent;
 
 
@@ -1189,7 +1194,7 @@ var Iota = function () {
                 });
                 return _context13.abrupt('return', bundleTrytes.reverse());
 
-              case 23:
+              case 21:
               case 'end':
                 return _context13.stop();
             }
