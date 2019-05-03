@@ -12,7 +12,6 @@ const { addChecksum } = require('@iota/checksum');
 const { default: Iota } = require('../dist/iota');
 
 const HASH_LENGTH = 81;
-const SIGNATURE_FRAGMENT_LENGTH = 27 * HASH_LENGTH;
 const NULL_HASH_TRYTES = '9'.repeat(HASH_LENGTH);
 const BIP32_PATH = "44'/4218'/0'/0'";
 const NOW = () => 1000;
@@ -27,16 +26,6 @@ describe('Iota', function() {
   let transport;
   let iota;
 
-  class MyIota extends Iota {
-    async _sign(index, _) {
-      // read the entire signature fragment in one APDU command
-      return await super._sign(
-        index,
-        this.security * SIGNATURE_FRAGMENT_LENGTH
-      );
-    }
-  }
-
   beforeEach(async function() {
     const recordingName = this.currentTest.fullTitle().replace(/[^\w]+/g, '_');
     const recordingFileName = path.join(
@@ -50,7 +39,7 @@ describe('Iota', function() {
     const Transport = createTransportReplayer(recordStore);
 
     transport = await Transport.open();
-    iota = new MyIota(transport);
+    iota = new Iota(transport);
   });
 
   afterEach(async function() {
