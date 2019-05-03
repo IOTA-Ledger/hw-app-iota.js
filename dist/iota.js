@@ -692,7 +692,7 @@ var Iota = function () {
 
               case 3:
                 response = _context7.sent;
-                pubkeyOutStruct = new _struct2.default().chars('address', 81);
+                pubkeyOutStruct = new _struct2.default().chars('address', HASH_LENGTH);
 
                 pubkeyOutStruct.setBuffer(response);
 
@@ -759,7 +759,7 @@ var Iota = function () {
     key: '_createTxInputLegacy',
     value: function _createTxInputLegacy(address, address_idx, value, tag, tx_idx, tx_len, time) {
       var struct = new _struct2.default();
-      struct = struct.chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
+      struct = struct.chars('address', HASH_LENGTH).word32Ule('address_idx').word64Sle('value').chars('tag', TAG_LENGTH).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
 
       struct.allocate();
 
@@ -781,7 +781,7 @@ var Iota = function () {
       if (tx_idx == 0) {
         this._addSeedFields(struct);
       }
-      struct = struct.chars('address', 81).word32Ule('address_idx').word64Sle('value').chars('tag', 27).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
+      struct = struct.chars('address', HASH_LENGTH).word32Ule('address_idx').word64Sle('value').chars('tag', TAG_LENGTH).word32Ule('tx_idx').word32Ule('tx_len').word32Ule('time');
 
       struct.allocate();
 
@@ -820,7 +820,7 @@ var Iota = function () {
 
               case 5:
                 response = _context9.sent;
-                txOutStruct = new _struct2.default().word8('finalized').chars('bundleHash', 81);
+                txOutStruct = new _struct2.default().word8('finalized').chars('bundleHash', HASH_LENGTH);
 
                 txOutStruct.setBuffer(response);
 
@@ -1126,7 +1126,7 @@ var Iota = function () {
                     // remove checksum
                     address: (0, _utils.noChecksum)(t.address),
                     // pad tag
-                    tag: t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG
+                    tag: t.tag ? t.tag.padEnd(TAG_LENGTH, '9') : EMPTY_TAG
                   });
                 });
                 inputs = inputs.map(function (i) {

@@ -361,7 +361,7 @@ class Iota {
       TIMEOUT_CMD_PUBKEY
     );
 
-    const pubkeyOutStruct = new Struct().chars('address', 81);
+    const pubkeyOutStruct = new Struct().chars('address', HASH_LENGTH);
     pubkeyOutStruct.setBuffer(response);
 
     return pubkeyOutStruct.fields.address;
@@ -395,10 +395,10 @@ class Iota {
   _createTxInputLegacy(address, address_idx, value, tag, tx_idx, tx_len, time) {
     let struct = new Struct();
     struct = struct
-      .chars('address', 81)
+      .chars('address', HASH_LENGTH)
       .word32Ule('address_idx')
       .word64Sle('value')
-      .chars('tag', 27)
+      .chars('tag', TAG_LENGTH)
       .word32Ule('tx_idx')
       .word32Ule('tx_len')
       .word32Ule('time');
@@ -423,10 +423,10 @@ class Iota {
       this._addSeedFields(struct);
     }
     struct = struct
-      .chars('address', 81)
+      .chars('address', HASH_LENGTH)
       .word32Ule('address_idx')
       .word64Sle('value')
-      .chars('tag', 27)
+      .chars('tag', TAG_LENGTH)
       .word32Ule('tx_idx')
       .word32Ule('tx_len')
       .word32Ule('time');
@@ -472,7 +472,9 @@ class Iota {
       timeout
     );
 
-    const txOutStruct = new Struct().word8('finalized').chars('bundleHash', 81);
+    const txOutStruct = new Struct()
+      .word8('finalized')
+      .chars('bundleHash', HASH_LENGTH);
     txOutStruct.setBuffer(response);
 
     return {
@@ -576,7 +578,7 @@ class Iota {
       // remove checksum
       address: noChecksum(t.address),
       // pad tag
-      tag: t.tag ? t.tag.padEnd(27, '9') : EMPTY_TAG
+      tag: t.tag ? t.tag.padEnd(TAG_LENGTH, '9') : EMPTY_TAG
     }));
     inputs = inputs.map(i => ({
       ...i,
