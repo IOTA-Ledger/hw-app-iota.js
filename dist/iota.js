@@ -711,7 +711,7 @@ var Iota = function () {
   }, {
     key: '_sign',
     value: function () {
-      var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(index, signatureFragmentLength) {
+      var _ref8 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee8(index, sliceLength) {
         var signInStruct, response, signOutStruct;
         return _regenerator2.default.wrap(function _callee8$(_context8) {
           while (1) {
@@ -728,7 +728,7 @@ var Iota = function () {
 
               case 5:
                 response = _context8.sent;
-                signOutStruct = new _struct2.default().chars('signature', signatureFragmentLength).word8Sle('fragmentsRemaining');
+                signOutStruct = new _struct2.default().chars('signature', sliceLength).word8Sle('fragmentsRemaining');
 
                 signOutStruct.setBuffer(response);
 
@@ -842,43 +842,48 @@ var Iota = function () {
   }, {
     key: '_getSignatureFragments',
     value: function () {
-      var _ref10 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee10(index) {
-        var signature, result;
+      var _ref10 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee10(index, sliceLength) {
+        var numSlices, signature, i, result;
         return _regenerator2.default.wrap(function _callee10$(_context10) {
           while (1) {
             switch (_context10.prev = _context10.next) {
               case 0:
+                numSlices = this.security * 2187 / sliceLength;
                 signature = '';
+                i = 1;
 
-              case 1:
-                if (!true) {
-                  _context10.next = 10;
+              case 3:
+                if (!(i <= numSlices)) {
+                  _context10.next = 13;
                   break;
                 }
 
-                _context10.next = 4;
-                return this._sign(index, SIGNATURE_FRAGMENT_SLICE_LENGTH);
+                _context10.next = 6;
+                return this._sign(index, sliceLength);
 
-              case 4:
+              case 6:
                 result = _context10.sent;
 
                 signature += result.signature;
 
-                if (!(result.fragmentsRemaining == 0)) {
-                  _context10.next = 8;
+                // the remaining fragments must match the num slices
+
+                if (!(i === numSlices != (result.fragmentsRemaining === 0))) {
+                  _context10.next = 10;
                   break;
                 }
 
-                return _context10.abrupt('break', 10);
-
-              case 8:
-                _context10.next = 1;
-                break;
+                throw new Error('Wrong signture length');
 
               case 10:
+                i++;
+                _context10.next = 3;
+                break;
+
+              case 13:
                 return _context10.abrupt('return', signature.match(/.{2187}/g));
 
-              case 11:
+              case 14:
               case 'end':
                 return _context10.stop();
             }
@@ -886,7 +891,7 @@ var Iota = function () {
         }, _callee10, this);
       }));
 
-      function _getSignatureFragments(_x20) {
+      function _getSignatureFragments(_x20, _x21) {
         return _ref10.apply(this, arguments);
       }
 
@@ -919,7 +924,7 @@ var Iota = function () {
               case 4:
                 address = bundle.bundle[i].address;
                 _context11.next = 7;
-                return this._getSignatureFragments(i);
+                return this._getSignatureFragments(i, SIGNATURE_FRAGMENT_SLICE_LENGTH);
 
               case 7:
                 signatureFragments = _context11.sent;
@@ -968,7 +973,7 @@ var Iota = function () {
         }, _callee11, this);
       }));
 
-      function _addSignatureFragmentsToBundle(_x21) {
+      function _addSignatureFragmentsToBundle(_x22) {
         return _ref11.apply(this, arguments);
       }
 
@@ -1079,7 +1084,7 @@ var Iota = function () {
         }, _callee12, this, [[5, 20, 24, 32], [25,, 27, 31]]);
       }));
 
-      function _signBundle(_x22, _x23) {
+      function _signBundle(_x23, _x24) {
         return _ref12.apply(this, arguments);
       }
 
@@ -1192,7 +1197,7 @@ var Iota = function () {
         }, _callee13, this);
       }));
 
-      function _prepareTransfers(_x24, _x25, _x26, _x27) {
+      function _prepareTransfers(_x25, _x26, _x27, _x28) {
         return _ref13.apply(this, arguments);
       }
 
@@ -1324,7 +1329,7 @@ var Iota = function () {
         }, _callee16, this, [[1, 8]]);
       }));
 
-      function _sendCommand(_x29, _x30, _x31, _x32, _x33) {
+      function _sendCommand(_x30, _x31, _x32, _x33, _x34) {
         return _ref16.apply(this, arguments);
       }
 

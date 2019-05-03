@@ -367,7 +367,7 @@ class Iota {
     return pubkeyOutStruct.fields.address;
   }
 
-  async _sign(index, signatureFragmentLength) {
+  async _sign(index, sliceLength) {
     const signInStruct = new Struct().word32Ule('index');
 
     signInStruct.allocate();
@@ -382,7 +382,7 @@ class Iota {
     );
 
     const signOutStruct = new Struct()
-      .chars('signature', signatureFragmentLength)
+      .chars('signature', sliceLength)
       .word8Sle('fragmentsRemaining');
     signOutStruct.setBuffer(response);
 
@@ -481,14 +481,17 @@ class Iota {
     };
   }
 
-  async _getSignatureFragments(index) {
+  async _getSignatureFragments(index, sliceLength) {
+    const numSlices = (this.security * 2187) / sliceLength;
+
     let signature = '';
-    while (true) {
-      const result = await this._sign(index, SIGNATURE_FRAGMENT_SLICE_LENGTH);
+    for (let i = 1; i <= numSlices; i++) {
+      const result = await this._sign(index, sliceLength);
       signature += result.signature;
 
-      if (result.fragmentsRemaining == 0) {
-        break;
+      // the remaining fragments must match the num slices
+      if ((i === numSlices) != (result.fragmentsRemaining === 0)) {
+        throw new Error('Wrong signture length');
       }
     }
 
@@ -504,7 +507,10 @@ class Iota {
       }
 
       const address = bundle.bundle[i].address;
-      const signatureFragments = await this._getSignatureFragments(i);
+      const signatureFragments = await this._getSignatureFragments(
+        i,
+        SIGNATURE_FRAGMENT_SLICE_LENGTH
+      );
 
       bundle.bundle[i].signatureMessageFragment = signatureFragments.shift();
 
