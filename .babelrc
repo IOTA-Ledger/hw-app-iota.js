@@ -1,7 +1,7 @@
 {
   "presets": [
     [
-      "env",
+      "@babel/preset-env",
       {
         "targets": {
           "browsers": [
@@ -11,9 +11,5 @@
         }
       }
     ]
-  ],
-  "plugins": [
-    "transform-runtime",
-    "transform-object-rest-spread"
   ]
 }
