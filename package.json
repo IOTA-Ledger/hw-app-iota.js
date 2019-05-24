@@ -25,25 +25,24 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "babel-runtime": "^6.26.0",
     "bip32-path": "^0.4.2",
-    "iota.lib.js": "^0.5.1",
-    "semver": "^6.0.0",
+    "iota.lib.js": "^0.5.2",
+    "semver": "^6.1.0",
     "struct": "0.0.12"
   },
   "devDependencies": {
     "@iota/checksum": "^1.0.0-beta.11",
     "@iota/core": "^1.0.0-beta.11",
-    "@ledgerhq/hw-transport-mocker": "^4.35.0",
+    "@ledgerhq/hw-transport-mocker": "^4.60.2",
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-polyfill": "^6.26.0",
     "babel-preset-env": "^1.7.0",
     "chai": "^4.2.0",
-    "eslint": "^5.5.0",
-    "mocha": "^6.0.1",
-    "prettier": "^1.14.2",
-    "rimraf": "^2.6.2"
+    "eslint": "^5.16.0",
+    "mocha": "^6.1.4",
+    "prettier": "^1.17.1",
+    "rimraf": "^2.6.3"
   }
 }
