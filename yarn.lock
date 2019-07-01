@@ -667,17 +667,19 @@
     warning "^4.0.3"
 
 "@iota/checksum@^1.0.0-beta.11", "@iota/checksum@^1.0.0-beta.12":
-  version "1.0.0-beta.12"
-  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.12.tgz#cdc82394099f7a7b154cf19207f31631a9228c0a"
-  integrity sha512-K2Q3bw4P7HJkPxeNjpulCsq/d3c9w2g+wbwYJxi51a18pnlPpd5AyBam9xfNXo8m/S47mmPuctraexgm+Q0Y1A==
+  version "1.0.0-beta.16"
+  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.16.tgz#d9d23dba4b27348368ae8f39d51238373b06caf1"
+  integrity sha512-ZXLKXDlcyF7BZIJyMpwMS2KZi7p1iOsNrqEALY80Uj3HHaR8aqVPD1gfLhaP6fPcC4KeG3PR5UwZ0D+H8EOiOw==
   dependencies:
-    "@iota/converter" "^1.0.0-beta.12"
-    "@iota/kerl" "^1.0.0-beta.12"
+    "@iota/converter" "^1.0.0-beta.16"
+    "@iota/kerl" "^1.0.0-beta.16"
 
-"@iota/converter@^1.0.0-beta.12":
-  version "1.0.0-beta.12"
-  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.12.tgz#873dfacbef2ac18aec814100c10f50568d54ef51"
-  integrity sha512-h12Wk72/lCMHOFLE7B6TctMizhGcDQspaYIZlqwQTdij3mPynfTrlyAIJhJw26cf3sNER9sOwR6FgVgSpVYUnQ==
+"@iota/converter@^1.0.0-beta.12", "@iota/converter@^1.0.0-beta.16":
+  version "1.0.0-beta.16"
+  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.16.tgz#a4b3004bb03c870efff1ebd41b368527846fe8bf"
+  integrity sha512-x+kDZuUZ1yMJm1chrqPWO4AQ+tRXUGIhtYwIJbb4+54VbJGitagXSNPZBg83G3zB7oyUOiCPAsEFxSogJOQ8FQ==
+  dependencies:
+    core-js "^3.1.4"
 
 "@iota/core@^1.0.0-beta.11":
   version "1.0.0-beta.12"
@@ -709,12 +711,13 @@
   dependencies:
     cross-fetch "^3.0.0"
 
-"@iota/kerl@^1.0.0-beta.12":
-  version "1.0.0-beta.12"
-  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.12.tgz#14eeb6f04b9f7fc025c23059e9d3473a7c5ed84e"
-  integrity sha512-Af/MxEBvKfkSkrjr87pl4y6qBvHzMGZWTsddBLP3iYJXY+6NW9kHKzO0UEwS/07eiS1y3bKsjP+WFgrnHN8f6Q==
+"@iota/kerl@^1.0.0-beta.12", "@iota/kerl@^1.0.0-beta.16":
+  version "1.0.0-beta.16"
+  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.16.tgz#37ccf33fb036dd003f5816f1ef370414e82eba0b"
+  integrity sha512-vhEJm3xSKIHULUDshe1EeBSp/bMGCKeB+sh2G0IgOFbvbg3Mj9mTE7/A/1DalTzwyEDclVSNkfykMgJKutYpsA==
   dependencies:
     "@types/crypto-js" "^3.1.38"
+    core-js "^3.1.4"
     crypto-js "^3.1.9-1"
 
 "@iota/pad@^1.0.0-beta.12":
@@ -1202,6 +1205,11 @@ core-js@^2.6.5:
   version "2.6.8"
   resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.8.tgz#dc3a1e633a04267944e0cb850d3880f340248139"
   integrity sha512-RWlREFU74TEkdXzyl1bka66O3kYp8jeTXrvJZDzVVMH8AiHUSOFpL1yfhQJ+wHocAm1m+4971W1PPzfLuCv1vg==
+
+core-js@^3.1.4:
+  version "3.1.4"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.1.4.tgz#3a2837fc48e582e1ae25907afcd6cf03b0cc7a07"
+  integrity sha512-YNZN8lt82XIMLnLirj9MhKDFZHalwzzrL9YLt6eb0T5D0EDl4IQ90IGkua8mHbnxNrkj1d8hbdizMc0Qmg1WnQ==
 
 core-util-is@~1.0.0:
   version "1.0.2"
