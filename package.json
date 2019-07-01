@@ -39,7 +39,7 @@
     "@iota/core": "^1.0.0-beta.11",
     "@ledgerhq/hw-transport-mocker": "^4.60.2",
     "chai": "^4.2.0",
-    "eslint": "^5.16.0",
+    "eslint": "^6.0.1",
     "mocha": "^6.1.4",
     "prettier": "^1.17.1",
     "rimraf": "^2.6.3"
