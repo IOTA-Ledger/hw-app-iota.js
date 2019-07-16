@@ -27,21 +27,21 @@
   "dependencies": {
     "bip32-path": "^0.4.2",
     "iota.lib.js": "^0.5.2",
-    "semver": "^6.1.0",
+    "semver": "^6.2.0",
     "struct": "0.0.12"
   },
   "devDependencies": {
-    "@babel/cli": "^7.4.4",
-    "@babel/core": "^7.4.5",
+    "@babel/cli": "^7.5.0",
+    "@babel/core": "^7.5.4",
     "@babel/polyfill": "^7.4.4",
-    "@babel/preset-env": "^7.4.5",
+    "@babel/preset-env": "^7.5.4",
     "@iota/checksum": "^1.0.0-beta.11",
     "@iota/core": "^1.0.0-beta.11",
-    "@ledgerhq/hw-transport-mocker": "^4.60.2",
+    "@ledgerhq/hw-transport-mocker": "^4.66.0",
     "chai": "^4.2.0",
     "eslint": "^6.0.1",
     "mocha": "^6.1.4",
-    "prettier": "^1.17.1",
+    "prettier": "^1.18.2",
     "rimraf": "^2.6.3"
   }
 }
