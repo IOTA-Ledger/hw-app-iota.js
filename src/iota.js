@@ -503,20 +503,23 @@ class Iota {
 
   async _addSignatureFragmentsToBundle(bundle) {
     for (let i = 0; i < bundle.bundle.length; i++) {
+      const tx = bundle.bundle[i];
+
       // only sign inputs
-      if (bundle.bundle[i].value >= 0) {
+      if (tx.value >= 0) {
         continue;
       }
 
-      const address = bundle.bundle[i].address;
+      // compute all the signature fragments for that input transaction
       const signatureFragments = await this._getSignatureFragments(
         i,
         SIGNATURE_FRAGMENT_SLICE_LENGTH
       );
-
-      bundle.bundle[i].signatureMessageFragment = signatureFragments.shift();
+      // and set the first fragment
+      tx.signatureMessageFragment = signatureFragments.shift();
 
       // set the signature fragments for all successive meta transactions
+      const address = tx.address;
       for (let j = 1; j < this.security; j++) {
         if (++i >= bundle.bundle.length) {
           return;
@@ -558,7 +561,6 @@ class Iota {
     }
 
     await this._addSignatureFragmentsToBundle(bundle);
-    return bundle;
   }
 
   _hasDuplicateAddresses(transfers, inputs, remainder) {
@@ -634,7 +636,7 @@ class Iota {
     }
 
     // sign the bundle on the ledger
-    bundle = await this._signBundle(bundle, addressKeyIndices);
+    await this._signBundle(bundle, addressKeyIndices);
 
     // compute and return the corresponding trytes
     const bundleTrytes = [];

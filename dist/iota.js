@@ -906,7 +906,8 @@ function () {
       var _addSignatureFragmentsToBundle2 = (0, _asyncToGenerator2["default"])(
       /*#__PURE__*/
       _regenerator["default"].mark(function _callee11(bundle) {
-        var i, address, signatureFragments, j, tx;
+        var i, tx, signatureFragments, address, j, _tx;
+
         return _regenerator["default"].wrap(function _callee11$(_context11) {
           while (1) {
             switch (_context11.prev = _context11.next) {
@@ -915,59 +916,62 @@ function () {
 
               case 1:
                 if (!(i < bundle.bundle.length)) {
-                  _context11.next = 21;
+                  _context11.next = 22;
                   break;
                 }
 
-                if (!(bundle.bundle[i].value >= 0)) {
-                  _context11.next = 4;
+                tx = bundle.bundle[i]; // only sign inputs
+
+                if (!(tx.value >= 0)) {
+                  _context11.next = 5;
                   break;
                 }
 
-                return _context11.abrupt("continue", 18);
+                return _context11.abrupt("continue", 19);
 
-              case 4:
-                address = bundle.bundle[i].address;
+              case 5:
                 _context11.next = 7;
                 return this._getSignatureFragments(i, SIGNATURE_FRAGMENT_SLICE_LENGTH);
 
               case 7:
                 signatureFragments = _context11.sent;
-                bundle.bundle[i].signatureMessageFragment = signatureFragments.shift(); // set the signature fragments for all successive meta transactions
+                // and set the first fragment
+                tx.signatureMessageFragment = signatureFragments.shift(); // set the signature fragments for all successive meta transactions
 
+                address = tx.address;
                 j = 1;
 
-              case 10:
+              case 11:
                 if (!(j < this.security)) {
-                  _context11.next = 18;
+                  _context11.next = 19;
                   break;
                 }
 
                 if (!(++i >= bundle.bundle.length)) {
-                  _context11.next = 13;
+                  _context11.next = 14;
                   break;
                 }
 
                 return _context11.abrupt("return");
 
-              case 13:
-                tx = bundle.bundle[i];
+              case 14:
+                _tx = bundle.bundle[i];
 
-                if (tx.address === address && tx.value === 0) {
-                  tx.signatureMessageFragment = signatureFragments.shift();
+                if (_tx.address === address && _tx.value === 0) {
+                  _tx.signatureMessageFragment = signatureFragments.shift();
                 }
 
-              case 15:
+              case 16:
                 j++;
-                _context11.next = 10;
+                _context11.next = 11;
                 break;
 
-              case 18:
+              case 19:
                 i++;
                 _context11.next = 1;
                 break;
 
-              case 21:
+              case 22:
               case "end":
                 return _context11.stop();
             }
@@ -1077,9 +1081,6 @@ function () {
                 return this._addSignatureFragmentsToBundle(bundle);
 
               case 38:
-                return _context12.abrupt("return", bundle);
-
-              case 39:
               case "end":
                 return _context12.stop();
             }
@@ -1186,7 +1187,6 @@ function () {
                 return this._signBundle(bundle, addressKeyIndices);
 
               case 17:
-                bundle = _context13.sent;
                 // compute and return the corresponding trytes
                 bundleTrytes = [];
                 bundle.bundle.forEach(function (tx) {
@@ -1194,7 +1194,7 @@ function () {
                 });
                 return _context13.abrupt("return", bundleTrytes.reverse());
 
-              case 21:
+              case 20:
               case "end":
                 return _context13.stop();
             }
