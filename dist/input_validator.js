@@ -1,5 +1,7 @@
 "use strict";
 
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
+
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
@@ -10,11 +12,13 @@ exports.isTransfersArray = isTransfersArray;
 exports.isInputsArray = isInputsArray;
 exports.isRemainderObject = isRemainderObject;
 
+var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
+
 var _inputValidator = require("iota.lib.js/lib/utils/inputValidator");
 
 function _isObject(object) {
-  const isNull = object === null;
-  return !isNull && typeof object === 'object';
+  var isNull = object === null;
+  return !isNull && (0, _typeof2["default"])(object) === 'object';
 }
 
 function isArray(array) {
@@ -34,17 +38,38 @@ function isTransfersArray(transfers) {
     return false;
   }
 
-  for (let transfer of transfers) {
-    if (!(0, _inputValidator.isAddress)(transfer.address)) {
-      return false;
-    }
+  var _iteratorNormalCompletion = true;
+  var _didIteratorError = false;
+  var _iteratorError = undefined;
 
-    if (!Number.isInteger(transfer.value) || transfer.value < 0) {
-      return false;
-    }
+  try {
+    for (var _iterator = transfers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var transfer = _step.value;
 
-    if (!(0, _inputValidator.isTrytes)(transfer.tag, '0,27')) {
-      return false;
+      if (!(0, _inputValidator.isAddress)(transfer.address)) {
+        return false;
+      }
+
+      if (!Number.isInteger(transfer.value) || transfer.value < 0) {
+        return false;
+      }
+
+      if (!(0, _inputValidator.isTrytes)(transfer.tag, '0,27')) {
+        return false;
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+        _iterator["return"]();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
     }
   }
 
@@ -56,17 +81,38 @@ function isInputsArray(inputs) {
     return false;
   }
 
-  for (let input of inputs) {
-    if (!(0, _inputValidator.isAddress)(input.address)) {
-      return false;
-    }
+  var _iteratorNormalCompletion2 = true;
+  var _didIteratorError2 = false;
+  var _iteratorError2 = undefined;
 
-    if (!Number.isInteger(input.balance) || input.balance < 0) {
-      return false;
-    }
+  try {
+    for (var _iterator2 = inputs[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+      var input = _step2.value;
 
-    if (!isIndex(input.keyIndex)) {
-      return false;
+      if (!(0, _inputValidator.isAddress)(input.address)) {
+        return false;
+      }
+
+      if (!Number.isInteger(input.balance) || input.balance < 0) {
+        return false;
+      }
+
+      if (!isIndex(input.keyIndex)) {
+        return false;
+      }
+    }
+  } catch (err) {
+    _didIteratorError2 = true;
+    _iteratorError2 = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+        _iterator2["return"]();
+      }
+    } finally {
+      if (_didIteratorError2) {
+        throw _iteratorError2;
+      }
     }
   }
 

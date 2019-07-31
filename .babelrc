@@ -1,15 +1,8 @@
 {
   "presets": [
-    [
-      "@babel/preset-env",
-      {
-        "targets": {
-          "browsers": [
-            "defaults"
-          ],
-          "node": 8
-        }
-      }
-    ]
+    "@babel/preset-env"
+  ],
+  "plugins": [
+    "@babel/plugin-transform-runtime"
   ]
 }

@@ -6,7 +6,7 @@
     "format": "prettier --single-quote --write src/**/*.js test/**/*.js",
     "lint": "eslint src",
     "build": "babel src -d dist",
-    "test": "npm run build && mocha --require @babel/polyfill",
+    "test": "npm run build && mocha",
     "prepublishOnly": "npm run clean && npm run lint && npm run test && npm run build"
   },
   "description": "Ledger Hardware Wallet IOTA Application API",
@@ -25,22 +25,23 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
+    "@babel/runtime": "^7.5.5",
     "bip32-path": "^0.4.2",
     "iota.lib.js": "^0.5.2",
-    "semver": "^6.2.0",
+    "semver": "^6.3.0",
     "struct": "0.0.12"
   },
   "devDependencies": {
-    "@babel/cli": "^7.5.0",
-    "@babel/core": "^7.5.4",
-    "@babel/polyfill": "^7.4.4",
-    "@babel/preset-env": "^7.5.4",
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5",
+    "@babel/plugin-transform-runtime": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
     "@iota/checksum": "^1.0.0-beta.11",
     "@iota/core": "^1.0.0-beta.11",
-    "@ledgerhq/hw-transport-mocker": "^4.66.0",
+    "@ledgerhq/hw-transport-mocker": "^4.68.2",
     "chai": "^4.2.0",
-    "eslint": "^6.0.1",
-    "mocha": "^6.1.4",
+    "eslint": "^6.1.0",
+    "mocha": "^6.2.0",
     "prettier": "^1.18.2",
     "rimraf": "^2.6.3"
   }
