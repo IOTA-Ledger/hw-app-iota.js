@@ -65,3 +65,6 @@ typings/
 
 # As we are using yarn ignore npm lock file
 package-lock.json
+
+# Transipled code
+dist
