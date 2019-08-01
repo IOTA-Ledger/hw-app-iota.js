@@ -1,15 +1,20 @@
+// @ledgerhq still requires polyfill, see github.com/LedgerHQ/ledgerjs/issues/332
+require('@babel/polyfill');
+
 const fs = require('fs');
 const path = require('path');
 const { expect } = require('chai');
+
+const { createPrepareTransfers, generateAddress } = require('@iota/core');
+const { addChecksum } = require('@iota/checksum');
+
 const {
   RecordStore,
   createTransportReplayer
 } = require('@ledgerhq/hw-transport-mocker');
-const { createPrepareTransfers, generateAddress } = require('@iota/core');
-const { addChecksum } = require('@iota/checksum');
 
-// use the library
-const { default: Iota } = require('../dist/iota');
+// test the transpiled library
+const Iota = require('../dist/iota.js');
 
 const HASH_LENGTH = 81;
 const NULL_HASH_TRYTES = '9'.repeat(HASH_LENGTH);
