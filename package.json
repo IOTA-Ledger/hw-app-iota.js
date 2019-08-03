@@ -19,11 +19,12 @@
   "main": "dist/iota.js",
   "module": "dist/iota.mjs",
   "files": [
-    "/dist"
+    "/dist",
+    "/src"
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "microbundle --format es,cjs",
+    "build": "microbundle --target node --format es,cjs",
     "dev": "microbundle watch",
     "format": "prettier --single-quote --write src/**/*.js test/**/*.js",
     "lint": "eslint src",
