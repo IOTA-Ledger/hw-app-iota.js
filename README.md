@@ -1,4 +1,10 @@
-This repository hosts the library to communicate with the Ledger Nano S IOTA app.
+# hw-app-iota
+
+[![NPM Version](https://img.shields.io/npm/v/hw-app-iota)](https://www.npmjs.com/package/hw-app-iota)
+[![Build Status](https://travis-ci.org/IOTA-Ledger/hw-app-iota.js.svg)](https://travis-ci.org/IOTA-Ledger/hw-app-iota.js)
+[![GitHub License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/IOTA-Ledger/hw-app-iota.js/master/LICENSE)
+
+JS Library for communication with Ledger Hardware Wallets and the [IOTA Ledger Application](https://github.comIOTA-Ledger/blue-app-iota).
 
 ## Examples
 
@@ -44,6 +50,10 @@ const prepareTransfers = async () => {
 
 prepareTransfers().then(t => console.log(t));
 ```
+
+### See also
+
+- [Ledger app IOTA demos](https://github.com/IOTA-ledger/ledger-app-iota-demos)
 
 ## API Reference
 
