@@ -1,8 +1,8 @@
 # hw-app-iota
 
+[![GitHub License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/IOTA-Ledger/hw-app-iota.js/master/LICENSE)
 [![NPM Version](https://img.shields.io/npm/v/hw-app-iota)](https://www.npmjs.com/package/hw-app-iota)
-[![Build Status](https://travis-ci.org/IOTA-Ledger/hw-app-iota.js.svg)](https://travis-ci.org/IOTA-Ledger/hw-app-iota.js)
-[![GitHub License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/IOTA-Ledger/hw-app-iota.js/master/LICENSE)
+[![Travis CI Build Status](https://img.shields.io/travis/IOTA-Ledger/hw-app-iota.js?label=TravisCI)](https://travis-ci.org/IOTA-Ledger/hw-app-iota.js)
 
 JS Library for communication with Ledger Hardware Wallets and the [IOTA Ledger Application](https://github.comIOTA-Ledger/blue-app-iota).
 
