@@ -3,19 +3,25 @@ require('@babel/polyfill');
 
 const fs = require('fs');
 const path = require('path');
-const { expect } = require('chai');
 
-const { createPrepareTransfers, generateAddress } = require('@iota/core');
-const { addChecksum } = require('@iota/checksum');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
 
 const {
   RecordStore,
   createTransportReplayer
 } = require('@ledgerhq/hw-transport-mocker');
+const { createPrepareTransfers, generateAddress } = require('@iota/core');
+const { addChecksum } = require('@iota/checksum');
+const { ValidationError } = require('@hapi/joi');
 
 // test the transpiled library
 const Iota = require('../dist/iota.js');
 
+const expect = chai.expect;
+chai.use(chaiAsPromised);
+
+const SECURITY = 2;
 const HASH_LENGTH = 81;
 const NULL_HASH_TRYTES = '9'.repeat(HASH_LENGTH);
 const BIP32_PATH = "44'/4218'/0'/0'";
@@ -39,7 +45,10 @@ describe('Iota', function() {
       recordingName + '.txt'
     );
 
-    const recording = fs.readFileSync(recordingFileName, 'utf-8');
+    // read only if recording exists
+    const recording = fs.existsSync(recordingFileName)
+      ? fs.readFileSync(recordingFileName, 'utf-8')
+      : '';
     const recordStore = RecordStore.fromString(recording);
     const Transport = createTransportReplayer(recordStore);
 
@@ -49,6 +58,28 @@ describe('Iota', function() {
 
   afterEach(async function() {
     await transport.close();
+  });
+
+  describe('#setActiveSeed', function() {
+    it('no path', async function() {
+      await expect(iota.setActiveSeed()).to.be.rejectedWith(ValidationError);
+    });
+
+    it('path too short', async function() {
+      const path = "0'";
+      await expect(iota.setActiveSeed(path)).to.be.rejectedWith(
+        Error,
+        'length'
+      );
+    });
+
+    it('path too long', async function() {
+      const path = "0'/0'/0'/0'/0'/0'";
+      await expect(iota.setActiveSeed(path)).to.be.rejectedWith(
+        Error,
+        'length'
+      );
+    });
   });
 
   describe('#getAddress', function() {
@@ -64,6 +95,10 @@ describe('Iota', function() {
       const address = await iota.getAddress(0, { checksum: true });
 
       expect(address).to.equal(addChecksum(EXPECTED_RESULTS.address));
+    });
+
+    it('not initialized', async function() {
+      await expect(iota.getAddress(0)).to.be.rejectedWith(Error, 'initialized');
     });
   });
 
@@ -134,20 +169,77 @@ describe('Iota', function() {
     this.slow(600);
     this.timeout(2500);
 
-    beforeEach(async function() {
-      transfers = createTransfers(2);
+    this.beforeEach(function() {
+      transfers = createTransfers(SECURITY);
+    });
+
+    it('not initialized', async function() {
+      await expect(
+        iota.prepareTransfers(
+          transfers.outputs,
+          transfers.inputs,
+          transfers.remainder
+        )
+      ).to.be.rejectedWith(Error, 'initialized');
+    });
+
+    it('zero-value transaction', async function() {
+      transfers.outputs[0].value = 0;
+      transfers.inputs[0].balance = 0;
+
+      await iota.setActiveSeed(BIP32_PATH, SECURITY);
+      await expect(
+        iota.prepareTransfers(transfers.outputs, transfers.inputs)
+      ).to.be.rejectedWith(Error);
+    });
+
+    it('no input', async function() {
+      transfers.outputs[0].value = 0;
+
+      await iota.setActiveSeed(BIP32_PATH, SECURITY);
+      await expect(
+        iota.prepareTransfers(transfers.outputs, [])
+      ).to.be.rejectedWith(ValidationError);
+    });
+
+    it('no output', async function() {
+      transfers.inputs[0].balance = 0;
+
+      await iota.setActiveSeed(BIP32_PATH, SECURITY);
+      await expect(
+        iota.prepareTransfers([], transfers.inputs)
+      ).to.be.rejectedWith(ValidationError);
+    });
+
+    it('no remainder', async function() {
+      await iota.setActiveSeed(BIP32_PATH, SECURITY);
+      await expect(
+        iota.prepareTransfers(transfers.outputs, transfers.inputs)
+      ).to.be.rejectedWith(Error, 'remainder');
+    });
+
+    it('insufficient balance', async function() {
+      transfers.outputs[0].value = 2;
+      transfers.inputs[0].balance = 1;
+
+      await iota.setActiveSeed(BIP32_PATH, SECURITY);
+      await expect(
+        iota.prepareTransfers(
+          transfers.outputs,
+          transfers.inputs,
+          transfers.remainder
+        )
+      ).to.be.rejectedWith(Error, 'balance');
     });
 
     it('without checksum', async function() {
-      const security = 2;
-
       const expected = await prepareTransfers(seed, transfers.outputs, {
         inputs: transfers.inputs,
         remainderAddress: transfers.remainder.address,
-        security
+        SECURITY
       });
 
-      await iota.setActiveSeed(BIP32_PATH, security);
+      await iota.setActiveSeed(BIP32_PATH, SECURITY);
       const actual = await iota.prepareTransfers(
         transfers.outputs,
         transfers.inputs,
@@ -159,18 +251,20 @@ describe('Iota', function() {
     });
 
     it('with checksum', async function() {
-      const security = 2;
       const expected = await prepareTransfers(seed, transfers.outputs, {
         inputs: transfers.inputs,
         remainderAddress: transfers.remainder.address,
-        security
+        SECURITY
       });
 
       transfers.outputs.forEach(o => (o.address = addChecksum(o.address)));
       transfers.inputs.forEach(i => (i.address = addChecksum(i.address)));
       transfers.remainder.address = addChecksum(transfers.remainder.address);
 
-      await iota.setActiveSeed(BIP32_PATH, security);
+      const outputsClone = transfers.outputs.map(o => Object.assign({}, o));
+      const inputsClone = transfers.inputs.map(i => Object.assign({}, i));
+
+      await iota.setActiveSeed(BIP32_PATH, SECURITY);
       const actual = await iota.prepareTransfers(
         transfers.outputs,
         transfers.inputs,
@@ -179,6 +273,10 @@ describe('Iota', function() {
       );
 
       expect(actual).to.deep.equal(expected);
+
+      // the transfer objects must not have changed
+      expect(transfers.outputs).to.deep.equal(outputsClone);
+      expect(transfers.inputs).to.deep.equal(inputsClone);
     });
   });
 });
