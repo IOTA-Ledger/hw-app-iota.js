@@ -6,8 +6,9 @@ import {
   transactionTrytes
 } from 'iota.lib.js/lib/utils/utils';
 import bippath from 'bip32-path';
-import semver from 'semver';
-import * as inputValidator from './input_validator';
+import { satisfies } from 'semver';
+import { getErrorMessage } from './error';
+import * as guards from './guards';
 
 /**
  * IOTA API
@@ -29,76 +30,11 @@ const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
 const TIMEOUT_CMD_USER_INTERACTION = 150000;
 
 const LEGACY_VERSION_RANGE = '<0.5';
+const DEFAULT_SECURITY = 2;
 const HASH_LENGTH = 81;
 const TAG_LENGTH = 27;
 const SIGNATURE_FRAGMENT_SLICE_LENGTH = 3 * HASH_LENGTH;
 const EMPTY_TAG = '9'.repeat(TAG_LENGTH);
-
-/**
- * Provides meaningful responses to error codes returned by IOTA Ledger app
- * @param {Object} error - Error statusCode
- * @returns {String} String message corresponding to error statusCode
- */
-function getIOTAStatusMessage(error) {
-  // no status code so must not even be communicating
-  if (error.id == 'U2F_5') {
-    return 'Ledger device timeout. Ensure Ledger is plugged in and IOTA app is running';
-  }
-
-  switch (error.statusCode) {
-    // improve text of most common errors
-    case 0x9000: // SW_OK
-      return 'Success';
-    case 0x6700: // SW_INCORRECT_LENGTH
-      return 'Incorrect input length';
-    case 0x6a80: // SW_COMMAND_INVALID_DATA
-      return 'Incorrect data';
-    case 0x6b00: // SW_INCORRECT_P1P2
-      return 'Incorrect command parameter';
-    case 0x6c00: // SW_INCORRECT_LENGTH_P3
-      return 'Incorrect length specified in header';
-    case 0x6d00: // SW_INS_NOT_SUPPORTED
-      return 'Invalid INS command';
-    case 0x6e00: // SW_CLA_NOT_SUPPORTED
-      return 'Incorrect CLA (Wrong application opened)';
-    case 0x6900: // SW_COMMAND_NOT_ALLOWED
-      return 'Command not allowed (Command out of order)';
-    case 0x6982: // SW_SECURITY_STATUS_NOT_SATISFIED
-      return 'Security not satisfied (Device locked)';
-    case 0x6985: // SW_CONDITIONS_OF_USE_NOT_SATISFIED
-      return 'Condition of use not satisfied (Denied by the user)';
-    case 0x6401: // SW_COMMAND_TIMEOUT
-      return 'Security not satisfied (Timeout exceeded)';
-    case 0x69a1: // SW_BUNDLE_ERROR + INSECURE HASH
-      return 'Bundle error (Insecure hash)';
-    case 0x69a2: // SW_BUNDLE_ERROR + NON-ZERO BALANCE
-      return 'Bundle error (Non zero balance)';
-    case 0x69a3: // SW_BUNDLE_ERROR + INVALID META TX
-      return 'Bundle error (Invalid meta transaction)';
-    case 0x69a4: // SW_BUNDLE_ERROR + INVALID ADDRESS INDEX
-      return 'Bundle error (Invalid input address/index pair(s))';
-    case 0x69a5: // SW_BUNDLE_ERROR + ADDRESS REUSED
-      return 'Bundle error (Address reused)';
-
-    // Legacy exceptions
-    case 0x6984: // SW_COMMAND_INVALID_DATA
-      return 'Invalid input data';
-    case 0x6986: // SW_APP_NOT_INITIALIZED
-      return 'App has not been initialized by user';
-    case 0x6991: // SW_TX_INVALID_INDEX
-      return 'Invalid transaction index';
-    case 0x6992: // SW_TX_INVALID_ORDER
-      return 'Invalid transaction order (Output, Inputs, Change)';
-    case 0x6993: // SW_TX_INVALID_META
-      return 'Invalid meta transaction';
-    case 0x6994: // SW_TX_INVALID_OUTPUT
-      return 'Invalid output transaction (Output must come first)';
-
-    default:
-      // UNKNOWN ERROR CODE
-      return error.message;
-  }
-}
 
 /**
  * Class for the interaction with the Ledger IOTA application.
@@ -109,10 +45,6 @@ function getIOTAStatusMessage(error) {
  */
 class Iota {
   constructor(transport) {
-    this.transport = transport;
-    this.config = undefined;
-    this.security = 0;
-    this.pathArray = undefined;
     transport.decorateAppAPIMethods(
       this,
       [
@@ -124,35 +56,32 @@ class Iota {
       ],
       'IOT'
     );
+
+    this.transport = transport;
+    this.config = undefined;
+    this.security = 0;
+    this.pathArray = undefined;
   }
 
   /**
    * Prepares the IOTA seed to be used for subsequent calls.
    *
    * @param {String} path - String representation of the BIP32 path. At most 5 levels.
-   * @param {Number} [security=2] - IOTA security level to use
+   * @param {Integer} [security=2] - IOTA security level to use
    * @example
    * iota.setActiveSeed("44'/4218'/0'/0'", 2);
    **/
-  async setActiveSeed(path, security = 2) {
-    if (!bippath.validateString(path)) {
-      throw new Error('Invalid BIP32 path string');
-    }
-    const pathArray = bippath.fromString(path).toPathArray();
-    if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
-      throw new Error('Invalid BIP32 path length');
-    }
-    if (!inputValidator.isSecurity(security)) {
-      throw new Error('Invalid security level provided');
-    }
+  async setActiveSeed(path, security = DEFAULT_SECURITY) {
+    guards.string(path);
+    guards.security(security);
 
-    this.pathArray = pathArray;
+    this.pathArray = Iota._validatePath(path);
     this.security = security;
 
     // query the app config, if not present
     this.config = this.config ? this.config : await this._getAppConfig();
 
-    if (semver.satisfies(this.config.app_version, LEGACY_VERSION_RANGE)) {
+    if (satisfies(this.config.app_version, LEGACY_VERSION_RANGE)) {
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
@@ -177,18 +106,14 @@ class Iota {
    * iota.getAddress(0, { checksum: true });
    **/
   async getAddress(index, options = {}) {
-    if (!this.security) {
-      throw new Error('Seed not yet initalized');
-    }
-    if (!inputValidator.isIndex(index)) {
-      throw new Error('Invalid Index provided');
-    }
+    this._assertInitialized();
+    guards.index(index);
 
-    options.checksum = options.checksum || false;
-    options.display = options.display || false;
+    const checksum = options.checksum || false;
+    const display = options.display || false;
 
-    const address = await this._publicKey(index, options.display);
-    if (options.checksum) {
+    const address = await this._publicKey(index, display);
+    if (checksum) {
       return addChecksum(address);
     }
     return address;
@@ -212,48 +137,17 @@ class Iota {
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
   async prepareTransfers(transfers, inputs, remainder, now = () => Date.now()) {
-    if (!this.security) {
-      throw new Error('Seed not yet initalized');
-    }
-    if (!inputValidator.isTransfersArray(transfers)) {
-      throw new Error('Invalid transfers array provided');
-    }
-    if (!inputValidator.isInputsArray(inputs)) {
-      throw new Error('Invalid inputs array provided');
-    }
+    this._assertInitialized();
+    guards.transfers(transfers);
+    guards.inputs(inputs);
+    guards.remainder(remainder);
+    guards.nullaryFunc(now);
 
-    // filter unnecessary inputs
-    inputs = inputs.filter(input => input.balance > 0);
-
-    if (inputs.length < 1) {
-      throw new Error('At least one input required');
-    }
-    if (transfers.length > 1) {
-      throw new Error('Unsupported number of transfers');
+    if (transfers.length != 1) {
+      throw new Error('unsupported number of transfers');
     }
 
-    const balance = inputs.reduce((a, i) => a + i.balance, 0);
-    const payment = transfers.reduce((a, t) => a + t.value, 0);
-
-    if (balance === payment) {
-      // ignore the remainder, if there is no change
-      remainder = undefined;
-    } else if (!remainder) {
-      throw new Error('Remainder object required');
-    }
-
-    if (remainder) {
-      if (!inputValidator.isRemainderObject(remainder)) {
-        throw new Error('Invalid remainder object provided');
-      }
-
-      remainder = {
-        address: remainder.address,
-        value: balance - payment,
-        keyIndex: remainder.keyIndex
-      };
-    }
-
+    remainder = Iota._validateRemainder(transfers, inputs, remainder);
     const trytes = await this._prepareTransfers(
       transfers,
       inputs,
@@ -295,6 +189,27 @@ class Iota {
   }
 
   ///////// Private methods should not be called directly! /////////
+
+  static _validatePath(path) {
+    let pathArray;
+    try {
+      pathArray = bippath.fromString(path).toPathArray();
+    } catch (e) {
+      throw new Error('"path" invalid: ' + e.message);
+    }
+
+    if (!pathArray || pathArray.length < 2 || pathArray.length > 5) {
+      throw new Error('"path" invalid: ' + 'Invalid path length');
+    }
+
+    return pathArray;
+  }
+
+  _assertInitialized() {
+    if (!this.security) {
+      throw new Error('seed not yet initialized');
+    }
+  }
 
   _addSeedFields(struct) {
     return struct
@@ -365,6 +280,27 @@ class Iota {
     pubkeyOutStruct.setBuffer(response);
 
     return pubkeyOutStruct.fields.address;
+  }
+
+  static _validateRemainder(transfers, inputs, remainder) {
+    const balance = inputs.reduce((a, i) => a + i.balance, 0);
+    const payment = transfers.reduce((a, t) => a + t.value, 0);
+
+    if (balance < payment) {
+      throw new Error('insufficient balance');
+    } else if (balance > payment) {
+      if (!remainder) {
+        throw new Error('"remainder" is required');
+      }
+      return {
+        address: remainder.address,
+        value: balance - payment,
+        keyIndex: remainder.keyIndex
+      };
+    }
+
+    // ignore the remainder, if there is no change
+    return undefined;
   }
 
   async _sign(index, sliceLength) {
@@ -493,7 +429,7 @@ class Iota {
 
       // the remaining fragments must match the num slices
       if ((i === numSlices) != (result.fragmentsRemaining === 0)) {
-        throw new Error('Wrong signture length');
+        throw new Error('wrong signture length');
       }
     }
 
@@ -554,10 +490,10 @@ class Iota {
     }
 
     if (!finalized) {
-      throw new Error('Bundle not finalized');
+      throw new Error('bundle not finalized');
     }
     if (bundleHash !== bundle.bundle[0].bundle) {
-      throw new Error('Wrong bundle hash');
+      throw new Error('wrong bundle hash');
     }
 
     await this._addSignatureFragmentsToBundle(bundle);
@@ -706,18 +642,13 @@ class Iota {
 
   async _sendCommand(ins, p1, p2, data, timeout) {
     const transport = this.transport;
-
     try {
       transport.setExchangeTimeout(timeout);
       return await transport.send(CLA, ins, p1, p2, data);
     } catch (error) {
-      // set the message according to the status code
-      const smsg = getIOTAStatusMessage(error);
-      error.message = `Ledger device: ${smsg}`;
+      // update the message, if status code is present
       if (error.statusCode) {
-        // add hex status code if present
-        const statusCodeStr = error.statusCode.toString(16);
-        error.message += ` (0x${statusCodeStr})`;
+        error.message = getErrorMessage(error.statusCode) || error.message;
       }
       throw error;
     }
