@@ -33,7 +33,7 @@
     "prepublishOnly": "npm run clean && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
-    "@hapi/joi": "^15.1.1",
+    "@hapi/joi": "^16.1.4",
     "bip32-path": "^0.4.2",
     "chai-as-promised": "^7.1.1",
     "iota.lib.js": "^0.5.2",
