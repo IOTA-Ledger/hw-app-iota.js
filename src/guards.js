@@ -8,10 +8,10 @@ const validBalance = validInteger.min(1).max(2779530283277761);
 
 const validTrytes = Joi.string().regex(/^[A-Z9]+$/); // tryte string in the default base-27 encoding
 const validTag = validTrytes.allow('').max(27);
-const validAddress = Joi.alternatives().try([
+const validAddress = Joi.alternatives().try(
   validTrytes.length(81), // without checksum
   validTrytes.length(90) // with checksum
-]);
+);
 
 const validTransfers = Joi.array()
   .items(
