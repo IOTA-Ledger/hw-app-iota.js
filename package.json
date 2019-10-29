@@ -35,7 +35,6 @@
   "dependencies": {
     "@hapi/joi": "^16.1.7",
     "bip32-path": "^0.4.2",
-    "chai-as-promised": "^7.1.1",
     "iota.lib.js": "^0.5.2",
     "semver": "^6.3.0",
     "struct": "0.0.12"
@@ -46,6 +45,7 @@
     "@iota/core": "^1.0.0-beta.21",
     "@ledgerhq/hw-transport-mocker": "^4.73.3",
     "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "eslint": "^6.6.0",
     "microbundle": "^0.11.0",
     "mocha": "^6.2.2",
