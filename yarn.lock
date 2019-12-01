@@ -251,17 +251,17 @@
     warning "^4.0.3"
 
 "@iota/checksum@^1.0.0-beta.21":
-  version "1.0.0-beta.21"
-  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.21.tgz#7ba1fba95affa73a3a44ac9455a22b59961762f5"
-  integrity sha512-v5JUJrta3DQxCj246mgg80QZZvw1p457t4WM9Do8zObiyKRaF6gXTasNW9L8LPXcCiXBGSUQchyvvQ0x28tPow==
+  version "1.0.0-beta.23"
+  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.23.tgz#b5b9e462dedfd6f621b38d6b9dcf9c6a65c1ecf7"
+  integrity sha512-zcIqYOZhYgLYvr1caaHWTCK1NuNHJENyBinaJ2y8q/kThvzpRY3oHNmV0kLKANrPYDpID8cg9C1vDgPZf457zw==
   dependencies:
-    "@iota/converter" "^1.0.0-beta.21"
-    "@iota/kerl" "^1.0.0-beta.21"
+    "@iota/converter" "^1.0.0-beta.23"
+    "@iota/kerl" "^1.0.0-beta.23"
 
-"@iota/converter@^1.0.0-beta.21":
-  version "1.0.0-beta.21"
-  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.21.tgz#ea94bb738cf1df753530e60a2089ee187622fae2"
-  integrity sha512-voiOZyaCCCTQ0rAwkwkuMAhuz4yLanPVd1nmZe0Jh1OeksQWZzlnJL7QQcBP4k4LZvRKw0sb1FyIKIsDJfdyig==
+"@iota/converter@^1.0.0-beta.21", "@iota/converter@^1.0.0-beta.23":
+  version "1.0.0-beta.23"
+  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.23.tgz#5a4febade42d610c67a3626b67d55067f45ded39"
+  integrity sha512-5RcLHaF7oR+WEI4n3OV6SJTA6XuvVIBcc6aMDbqEAh9ahVXIE5Yq7AyJhQxUvE1ZyfJTHSfTdSf26bpmFCMFpQ==
   dependencies:
     core-js "^3.1.4"
 
@@ -296,10 +296,10 @@
     cross-fetch "^3.0.0"
     url-parse "^1.4.7"
 
-"@iota/kerl@^1.0.0-beta.21":
-  version "1.0.0-beta.21"
-  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.21.tgz#8e8760056af469af5fc4239411d270ae7187a10d"
-  integrity sha512-JzarmedEpLvs8ZlA37FqaOcU6rJIiSJbEjkJMZiDm3ZWcAgqcnzfEqyT3RDn2capPsQ3maiVgL60oFueizMbNQ==
+"@iota/kerl@^1.0.0-beta.21", "@iota/kerl@^1.0.0-beta.23":
+  version "1.0.0-beta.23"
+  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.23.tgz#9579edc8dc8597b5b67d910db5de4f407b4e83ed"
+  integrity sha512-+UnsmHTCPyuNlEXnz5GXB/SBzmXXYH8gvAdQh3Bh9rdiIW6lbEhA8QHCKJWjBQ9hAopQMG9KAkzlhDwwyBlpPg==
   dependencies:
     "@types/crypto-js" "^3.1.38"
     crypto-js "^3.1.9-1"
