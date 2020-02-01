@@ -238,10 +238,10 @@
     "@iota/transaction" "^1.0.0-beta.23"
     "@iota/transaction-converter" "^1.0.0-beta.23"
 
-"@iota/bundle@^1.0.0-beta.23":
-  version "1.0.0-beta.23"
-  resolved "https://registry.yarnpkg.com/@iota/bundle/-/bundle-1.0.0-beta.23.tgz#b097a14c21de94e5c837d035cc6d9f18df309cf9"
-  integrity sha512-nYX+dS1UjJVixAfee+670jaQLWqnv5rIdfPynvLGyByUx+lUxc4J3Egps3P18KiX2J7aVhxlZCdqw2lgePGjDg==
+"@iota/bundle@^1.0.0-beta.29":
+  version "1.0.0-beta.29"
+  resolved "https://registry.yarnpkg.com/@iota/bundle/-/bundle-1.0.0-beta.29.tgz#1dfe9ce9617e04cc6412524da4eae9b174acbf0d"
+  integrity sha512-KKR/ocMHpErrCxfyujsT3p1RjfE7TxHIsEPBLv7PJv6aHkr8ahaNfIMx07iFixy08+gxFKAnVAOS9mtytSHf3A==
   dependencies:
     "@iota/converter" "^1.0.0-beta.23"
     "@iota/kerl" "^1.0.0-beta.23"
@@ -266,11 +266,11 @@
     core-js "^3.1.4"
 
 "@iota/core@^1.0.0-beta.21":
-  version "1.0.0-beta.27"
-  resolved "https://registry.yarnpkg.com/@iota/core/-/core-1.0.0-beta.27.tgz#d2e7aaca6713b357b22f0d6fbb5cdbd93059a732"
-  integrity sha512-LprJRSW3kIITlGkhJlItQLlimlgvIUo3NuUDJgzRZ1eAEhL0JVckjiOCWkQd/MX7ngsBsDhY81Zevhp/JT1qsg==
+  version "1.0.0-beta.29"
+  resolved "https://registry.yarnpkg.com/@iota/core/-/core-1.0.0-beta.29.tgz#516b9e3484a6e851ee5d3673113652888c8e44ef"
+  integrity sha512-b/cf/ED2+k5gFL4bEMKLVPxbIXWgEf2vcm8/2ebkeT93nW1ZsmakNNQqWfCSj/8C0Hrd3SVgICfxwwgFwSYt5A==
   dependencies:
-    "@iota/bundle" "^1.0.0-beta.23"
+    "@iota/bundle" "^1.0.0-beta.29"
     "@iota/bundle-validator" "^1.0.0-beta.23"
     "@iota/checksum" "^1.0.0-beta.23"
     "@iota/converter" "^1.0.0-beta.23"
