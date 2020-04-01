@@ -43,7 +43,7 @@
     "@babel/polyfill": "^7.6.0",
     "@iota/checksum": "^1.0.0-beta.21",
     "@iota/core": "^1.0.0-beta.21",
-    "@ledgerhq/hw-transport-mocker": "^4.73.4",
+    "@ledgerhq/hw-transport-mocker": "^5.12.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "eslint": "^6.6.0",
