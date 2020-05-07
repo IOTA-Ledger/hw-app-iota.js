@@ -36,7 +36,7 @@
     "@hapi/joi": "^17.1.1",
     "bip32-path": "^0.4.2",
     "iota.lib.js": "^0.5.2",
-    "semver": "^6.3.0",
+    "semver": "^7.3.2",
     "struct": "0.0.12"
   },
   "devDependencies": {
