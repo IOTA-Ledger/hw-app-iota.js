@@ -2067,9 +2067,9 @@ inquirer@^7.0.0:
     through "^2.3.6"
 
 iota.lib.js@^0.5.2:
-  version "0.5.2"
-  resolved "https://registry.yarnpkg.com/iota.lib.js/-/iota.lib.js-0.5.2.tgz#7fed8940cb7f0dd6de4cb458280a0cfa3ca65f34"
-  integrity sha512-2+4D8kFAxPjkBS4oDmnoNxoYSAYnl23C5OTLoc2ZtSrFmFsPRb5rOjmEX4WEn2RocFMiV3Ndjfqk5ct469Ayjw==
+  version "0.5.3"
+  resolved "https://registry.yarnpkg.com/iota.lib.js/-/iota.lib.js-0.5.3.tgz#9ed6b3bdae075f0828205c2c94b64630b08a1862"
+  integrity sha512-wyOU2YUbFx9VyxmGK6u+/OXjrbhBKdg2Ei83AQwH4yHlJLBT95UZNRgQS5axxt7TOfwtS4xxfiMPmjvw8Mn6yQ==
   dependencies:
     async "^2.5.0"
     bignumber.js "^4.1.0"
