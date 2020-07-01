@@ -281,17 +281,17 @@
     warning "^4.0.3"
 
 "@iota/checksum@^1.0.0-beta.23":
-  version "1.0.0-beta.23"
-  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.23.tgz#b5b9e462dedfd6f621b38d6b9dcf9c6a65c1ecf7"
-  integrity sha512-zcIqYOZhYgLYvr1caaHWTCK1NuNHJENyBinaJ2y8q/kThvzpRY3oHNmV0kLKANrPYDpID8cg9C1vDgPZf457zw==
+  version "1.0.0-beta.30"
+  resolved "https://registry.yarnpkg.com/@iota/checksum/-/checksum-1.0.0-beta.30.tgz#70a8a8300ce0aa02578dd739bec072f590504855"
+  integrity sha512-oNCtmJjb152J/+Y5ddF+iBo0S0L7hDHZZHTRXovvcJeRniAZ6IF45Ko0qo/6SiNUEhUaQeJ/oj+kMdkfTdQ51A==
   dependencies:
-    "@iota/converter" "^1.0.0-beta.23"
-    "@iota/kerl" "^1.0.0-beta.23"
+    "@iota/converter" "^1.0.0-beta.30"
+    "@iota/kerl" "^1.0.0-beta.30"
 
-"@iota/converter@^1.0.0-beta.23":
-  version "1.0.0-beta.23"
-  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.23.tgz#5a4febade42d610c67a3626b67d55067f45ded39"
-  integrity sha512-5RcLHaF7oR+WEI4n3OV6SJTA6XuvVIBcc6aMDbqEAh9ahVXIE5Yq7AyJhQxUvE1ZyfJTHSfTdSf26bpmFCMFpQ==
+"@iota/converter@^1.0.0-beta.23", "@iota/converter@^1.0.0-beta.30":
+  version "1.0.0-beta.30"
+  resolved "https://registry.yarnpkg.com/@iota/converter/-/converter-1.0.0-beta.30.tgz#a56ec7c2b8599f9f4474394a475ce6254d756924"
+  integrity sha512-DxyTXatWZiVb2EKN1JVdaZs1zg8JUCHngk94hK2quV7JM3weemLOKd6OL8GQOJtjjoGIWBIZFpKpYZd2gaIBmg==
   dependencies:
     core-js "^3.1.4"
 
@@ -326,13 +326,13 @@
     cross-fetch "^3.0.0"
     url-parse "^1.4.7"
 
-"@iota/kerl@^1.0.0-beta.23":
-  version "1.0.0-beta.23"
-  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.23.tgz#9579edc8dc8597b5b67d910db5de4f407b4e83ed"
-  integrity sha512-+UnsmHTCPyuNlEXnz5GXB/SBzmXXYH8gvAdQh3Bh9rdiIW6lbEhA8QHCKJWjBQ9hAopQMG9KAkzlhDwwyBlpPg==
+"@iota/kerl@^1.0.0-beta.23", "@iota/kerl@^1.0.0-beta.30":
+  version "1.0.0-beta.30"
+  resolved "https://registry.yarnpkg.com/@iota/kerl/-/kerl-1.0.0-beta.30.tgz#36dc2fd756e4c8fb834938fa06bb387418a388ae"
+  integrity sha512-vVx7916Sb1fZWV9FmsFUUoxrgBbxeK4lc2Y0NYIw4OnU/Q6NsTu+GEXGNMArp97daU4UQhbceE7DNTj9HOICfQ==
   dependencies:
-    "@types/crypto-js" "^3.1.38"
-    crypto-js "^3.1.9-1"
+    "@types/crypto-js" "^3.1.47"
+    crypto-js "^4.0.0"
 
 "@iota/pad@^1.0.0-beta.19":
   version "1.0.0-beta.19"
@@ -410,10 +410,10 @@
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
-"@types/crypto-js@^3.1.38":
-  version "3.1.45"
-  resolved "https://registry.yarnpkg.com/@types/crypto-js/-/crypto-js-3.1.45.tgz#d2ccd23ae926ff05e3a99b11945e0435185cc1f1"
-  integrity sha512-/4yiILxQnVfpAtrVctuEl0qwqAToqayoPEvutyWhHPslr2D9sx85KRmIq7etC0ZYKCK8ppucoLzJukjJdAtfdA==
+"@types/crypto-js@^3.1.47":
+  version "3.1.47"
+  resolved "https://registry.yarnpkg.com/@types/crypto-js/-/crypto-js-3.1.47.tgz#36e549dd3f1322742a3a738e7c113ebe48221860"
+  integrity sha512-eI6gvpcGHLk3dAuHYnRCAjX+41gMv1nz/VP55wAe5HtmAKDOoPSfr3f6vkMc08ov1S0NsjvUBxDtHHxqQY1LGA==
 
 "@types/estree@0.0.39":
   version "0.0.39"
@@ -1122,6 +1122,11 @@ crypto-js@^3.1.9-1:
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-3.3.0.tgz#846dd1cce2f68aacfa156c8578f926a609b7976b"
   integrity sha512-DIT51nX0dCfKltpRiXV+/TVZq+Qq2NgF4644+K7Ttnla7zEzqc+kjJyiB96BHNyUTBxyjzRcZYpUdZa+QAqi6Q==
+
+crypto-js@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-4.0.0.tgz#2904ab2677a9d042856a2ea2ef80de92e4a36dcc"
+  integrity sha512-bzHZN8Pn+gS7DQA6n+iUmBfl0hO5DJq++QP3U6uTucDtk/0iGpXd/Gg7CGR0p8tJhofJyaKoWBuJI4eAO00BBg==
 
 css-color-names@0.0.4, css-color-names@^0.0.4:
   version "0.0.4"
