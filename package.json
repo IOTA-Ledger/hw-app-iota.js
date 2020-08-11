@@ -17,14 +17,15 @@
   },
   "source": "src/iota.js",
   "main": "dist/iota.js",
-  "module": "dist/iota.mjs",
+  "module": "dist/iota.m.js",
+  "esmodule": "dist/iota.modern.js",
   "files": [
     "/dist",
     "/src"
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "microbundle --target node --format es,cjs",
+    "build": "microbundle --format modern,es,cjs",
     "dev": "microbundle watch",
     "format": "prettier --single-quote --write src/**/*.js test/**/*.js",
     "lint": "eslint src",
@@ -40,15 +41,15 @@
     "struct": "0.0.12"
   },
   "devDependencies": {
-    "@babel/polyfill": "^7.8.7",
-    "@iota/checksum": "^1.0.0-beta.23",
-    "@iota/core": "^1.0.0-beta.29",
-    "@ledgerhq/hw-transport-mocker": "^5.15.0",
+    "@babel/polyfill": "^7.10.4",
+    "@iota/checksum": "^1.0.0-beta.30",
+    "@iota/core": "^1.0.0-beta.30",
+    "@ledgerhq/hw-transport-mocker": "^5.22.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^6.8.0",
-    "microbundle": "^0.11.0",
-    "mocha": "^7.1.2",
+    "eslint": "^7.6.0",
+    "microbundle": "^0.12.3",
+    "mocha": "^8.1.1",
     "prettier": "^2.0.5",
     "rimraf": "^3.0.2"
   }
