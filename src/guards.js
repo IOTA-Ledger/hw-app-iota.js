@@ -18,7 +18,7 @@ const validTransfers = Joi.array()
     Joi.object({
       address: validAddress.required(),
       tag: validTag.required(),
-      value: validValue.required()
+      value: validValue.required(),
     }).unknown()
   )
   .min(1);
@@ -27,13 +27,13 @@ const validInputs = Joi.array()
     Joi.object({
       address: validAddress.required(),
       balance: validBalance.required(),
-      keyIndex: validIndex.required()
+      keyIndex: validIndex.required(),
     }).unknown()
   )
   .min(1);
 const validRemainder = Joi.object({
   address: validAddress.required(),
-  keyIndex: validIndex.required()
+  keyIndex: validIndex.required(),
 }).unknown();
 
 export function string(value) {
@@ -61,10 +61,5 @@ export function remainder(value) {
 }
 
 export function nullaryFunc(value) {
-  Joi.assert(
-    value,
-    Joi.func()
-      .arity(0)
-      .required()
-  );
+  Joi.assert(value, Joi.func().arity(0).required());
 }

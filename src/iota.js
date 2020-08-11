@@ -3,7 +3,7 @@ import Bundle from 'iota.lib.js/lib/crypto/bundle/bundle';
 import {
   addChecksum,
   noChecksum,
-  transactionTrytes
+  transactionTrytes,
 } from 'iota.lib.js/lib/utils/utils';
 import bippath from 'bip32-path';
 import { satisfies } from 'semver';
@@ -23,7 +23,7 @@ const Commands = {
   INS_TX: 0x03, // TIMEOUT_CMD_NON_USER_INTERACTION => TIMEOUT_CMD_USER_INTERACTION (IF cur_idx == lst_idx)
   INS_SIGN: 0x04, // TIMEOUT_CMD_PUBKEY
   INS_GET_APP_CONFIG: 0x10, // TIMEOUT_CMD_NON_USER_INTERACTION
-  INS_RESET: 0xff // TIMEOUT_CMD_NON_USER_INTERACTION
+  INS_RESET: 0xff, // TIMEOUT_CMD_NON_USER_INTERACTION
 };
 const TIMEOUT_CMD_PUBKEY = 10000;
 const TIMEOUT_CMD_NON_USER_INTERACTION = 10000;
@@ -52,7 +52,7 @@ class Iota {
         'getAddress',
         'prepareTransfers',
         'getAppVersion',
-        'getAppMaxBundleSize'
+        'getAppMaxBundleSize',
       ],
       'IOT'
     );
@@ -295,7 +295,7 @@ class Iota {
       return {
         address: remainder.address,
         value: balance - payment,
-        keyIndex: remainder.keyIndex
+        keyIndex: remainder.keyIndex,
       };
     }
 
@@ -324,7 +324,7 @@ class Iota {
 
     return {
       signature: signOutStruct.fields.signature,
-      fragmentsRemaining: signOutStruct.fields.fragmentsRemaining
+      fragmentsRemaining: signOutStruct.fields.fragmentsRemaining,
     };
   }
 
@@ -415,7 +415,7 @@ class Iota {
 
     return {
       finalized: txOutStruct.fields.finalized,
-      bundleHash: txOutStruct.fields.bundleHash
+      bundleHash: txOutStruct.fields.bundleHash,
     };
   }
 
@@ -501,8 +501,8 @@ class Iota {
 
   _hasDuplicateAddresses(transfers, inputs, remainder) {
     const set = new Set();
-    transfers.forEach(t => set.add(t.address));
-    inputs.forEach(i => set.add(i.address));
+    transfers.forEach((t) => set.add(t.address));
+    inputs.forEach((i) => set.add(i.address));
     if (remainder && set.has(remainder.address)) {
       return true;
     }
@@ -511,19 +511,19 @@ class Iota {
   }
 
   async _prepareTransfers(transfers, inputs, remainder, now) {
-    transfers = transfers.map(t => ({
+    transfers = transfers.map((t) => ({
       ...t,
       // remove checksum
       address: noChecksum(t.address),
       // pad tag
-      tag: t.tag ? t.tag.padEnd(TAG_LENGTH, '9') : EMPTY_TAG
+      tag: t.tag ? t.tag.padEnd(TAG_LENGTH, '9') : EMPTY_TAG,
     }));
-    inputs = inputs.map(i => ({
+    inputs = inputs.map((i) => ({
       ...i,
       // remove checksum
       address: noChecksum(i.address),
       // set correct security level
-      security: this.security
+      security: this.security,
     }));
     if (remainder) {
       // remove checksum
@@ -538,10 +538,10 @@ class Iota {
     const timestamp = Math.floor(now() / 1000);
     let bundle = new Bundle();
 
-    transfers.forEach(t =>
+    transfers.forEach((t) =>
       bundle.addEntry(1, t.address, t.value, t.tag, timestamp, -1)
     );
-    inputs.forEach(i =>
+    inputs.forEach((i) =>
       bundle.addEntry(
         i.security,
         i.address,
@@ -566,7 +566,7 @@ class Iota {
 
     // map internal addresses to their index
     const addressKeyIndices = {};
-    inputs.forEach(i => (addressKeyIndices[i.address] = i.keyIndex));
+    inputs.forEach((i) => (addressKeyIndices[i.address] = i.keyIndex));
     if (remainder) {
       addressKeyIndices[remainder.address] = remainder.keyIndex;
     }
@@ -576,7 +576,7 @@ class Iota {
 
     // compute and return the corresponding trytes
     const bundleTrytes = [];
-    bundle.bundle.forEach(tx => bundleTrytes.push(transactionTrytes(tx)));
+    bundle.bundle.forEach((tx) => bundleTrytes.push(transactionTrytes(tx)));
     return bundleTrytes.reverse();
   }
 
@@ -626,7 +626,7 @@ class Iota {
         '.' +
         fields.app_version_minor +
         '.' +
-        fields.app_version_patch
+        fields.app_version_patch,
     };
   }
 

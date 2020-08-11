@@ -9,7 +9,7 @@ const chaiAsPromised = require('chai-as-promised');
 
 const {
   RecordStore,
-  createTransportReplayer
+  createTransportReplayer,
 } = require('@ledgerhq/hw-transport-mocker');
 const { createPrepareTransfers, generateAddress } = require('@iota/core');
 const { addChecksum } = require('@iota/checksum');
@@ -30,14 +30,14 @@ const NOW = () => 1000;
 const EXPECTED_RESULTS = {
   address: NULL_HASH_TRYTES,
   version: '0.5.0',
-  maxBundleSize: 8
+  maxBundleSize: 8,
 };
 
-describe('Iota', function() {
+describe('Iota', function () {
   let transport;
   let iota;
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     const recordingName = this.currentTest.fullTitle().replace(/[^\w]+/g, '_');
     const recordingFileName = path.join(
       path.dirname(__filename),
@@ -56,16 +56,16 @@ describe('Iota', function() {
     iota = new Iota(transport);
   });
 
-  afterEach(async function() {
+  afterEach(async function () {
     await transport.close();
   });
 
-  describe('#setActiveSeed', function() {
-    it('no path', async function() {
+  describe('#setActiveSeed', function () {
+    it('no path', async function () {
       await expect(iota.setActiveSeed()).to.be.rejectedWith(ValidationError);
     });
 
-    it('path too short', async function() {
+    it('path too short', async function () {
       const path = "0'";
       await expect(iota.setActiveSeed(path)).to.be.rejectedWith(
         Error,
@@ -73,7 +73,7 @@ describe('Iota', function() {
       );
     });
 
-    it('path too long', async function() {
+    it('path too long', async function () {
       const path = "0'/0'/0'/0'/0'/0'";
       await expect(iota.setActiveSeed(path)).to.be.rejectedWith(
         Error,
@@ -82,43 +82,43 @@ describe('Iota', function() {
     });
   });
 
-  describe('#getAddress', function() {
-    it('without checksum', async function() {
+  describe('#getAddress', function () {
+    it('without checksum', async function () {
       await iota.setActiveSeed(BIP32_PATH, 2);
       const address = await iota.getAddress(0);
 
       expect(address).to.equal(EXPECTED_RESULTS.address);
     });
 
-    it('with checksum', async function() {
+    it('with checksum', async function () {
       await iota.setActiveSeed(BIP32_PATH, 2);
       const address = await iota.getAddress(0, { checksum: true });
 
       expect(address).to.equal(addChecksum(EXPECTED_RESULTS.address));
     });
 
-    it('not initialized', async function() {
+    it('not initialized', async function () {
       await expect(iota.getAddress(0)).to.be.rejectedWith(Error, 'initialized');
     });
   });
 
-  describe('#getAppVersion', function() {
-    it('can get version', async function() {
+  describe('#getAppVersion', function () {
+    it('can get version', async function () {
       const version = await iota.getAppVersion();
 
       expect(version).to.equal(EXPECTED_RESULTS.version);
     });
   });
 
-  describe('#getAppMaxBundleSize', function() {
-    it('can get max bundle size', async function() {
+  describe('#getAppMaxBundleSize', function () {
+    it('can get max bundle size', async function () {
       const size = await iota.getAppMaxBundleSize();
 
       expect(size).to.equal(EXPECTED_RESULTS.maxBundleSize);
     });
   });
 
-  describe('#prepareTransfers', function() {
+  describe('#prepareTransfers', function () {
     const seed = NULL_HASH_TRYTES;
 
     // prepare transfers offline
@@ -143,16 +143,16 @@ describe('Iota', function() {
           address: NULL_HASH_TRYTES,
           value: 1,
           tag: '',
-          message: ''
-        }
+          message: '',
+        },
       ];
       const inputs = [
         {
           address: inputAddress,
           keyIndex: inputIndex,
           security,
-          balance: 2
-        }
+          balance: 2,
+        },
       ];
 
       return {
@@ -160,8 +160,8 @@ describe('Iota', function() {
         inputs,
         remainder: {
           address: remainderAddress,
-          keyIndex: remainderIndex
-        }
+          keyIndex: remainderIndex,
+        },
       };
     }
 
@@ -169,11 +169,11 @@ describe('Iota', function() {
     this.slow(600);
     this.timeout(2500);
 
-    this.beforeEach(function() {
+    this.beforeEach(function () {
       transfers = createTransfers(SECURITY);
     });
 
-    it('not initialized', async function() {
+    it('not initialized', async function () {
       await expect(
         iota.prepareTransfers(
           transfers.outputs,
@@ -183,7 +183,7 @@ describe('Iota', function() {
       ).to.be.rejectedWith(Error, 'initialized');
     });
 
-    it('zero-value transaction', async function() {
+    it('zero-value transaction', async function () {
       transfers.outputs[0].value = 0;
       transfers.inputs[0].balance = 0;
 
@@ -193,7 +193,7 @@ describe('Iota', function() {
       ).to.be.rejectedWith(Error);
     });
 
-    it('no input', async function() {
+    it('no input', async function () {
       transfers.outputs[0].value = 0;
 
       await iota.setActiveSeed(BIP32_PATH, SECURITY);
@@ -202,7 +202,7 @@ describe('Iota', function() {
       ).to.be.rejectedWith(ValidationError);
     });
 
-    it('no output', async function() {
+    it('no output', async function () {
       transfers.inputs[0].balance = 0;
 
       await iota.setActiveSeed(BIP32_PATH, SECURITY);
@@ -211,14 +211,14 @@ describe('Iota', function() {
       ).to.be.rejectedWith(ValidationError);
     });
 
-    it('no remainder', async function() {
+    it('no remainder', async function () {
       await iota.setActiveSeed(BIP32_PATH, SECURITY);
       await expect(
         iota.prepareTransfers(transfers.outputs, transfers.inputs)
       ).to.be.rejectedWith(Error, 'remainder');
     });
 
-    it('insufficient balance', async function() {
+    it('insufficient balance', async function () {
       transfers.outputs[0].value = 2;
       transfers.inputs[0].balance = 1;
 
@@ -232,11 +232,11 @@ describe('Iota', function() {
       ).to.be.rejectedWith(Error, 'balance');
     });
 
-    it('without checksum', async function() {
+    it('without checksum', async function () {
       const expected = await prepareTransfers(seed, transfers.outputs, {
         inputs: transfers.inputs,
         remainderAddress: transfers.remainder.address,
-        SECURITY
+        SECURITY,
       });
 
       await iota.setActiveSeed(BIP32_PATH, SECURITY);
@@ -250,19 +250,19 @@ describe('Iota', function() {
       expect(actual).to.deep.equal(expected);
     });
 
-    it('with checksum', async function() {
+    it('with checksum', async function () {
       const expected = await prepareTransfers(seed, transfers.outputs, {
         inputs: transfers.inputs,
         remainderAddress: transfers.remainder.address,
-        SECURITY
+        SECURITY,
       });
 
-      transfers.outputs.forEach(o => (o.address = addChecksum(o.address)));
-      transfers.inputs.forEach(i => (i.address = addChecksum(i.address)));
+      transfers.outputs.forEach((o) => (o.address = addChecksum(o.address)));
+      transfers.inputs.forEach((i) => (i.address = addChecksum(i.address)));
       transfers.remainder.address = addChecksum(transfers.remainder.address);
 
-      const outputsClone = transfers.outputs.map(o => Object.assign({}, o));
-      const inputsClone = transfers.inputs.map(i => Object.assign({}, i));
+      const outputsClone = transfers.outputs.map((o) => Object.assign({}, o));
+      const inputsClone = transfers.inputs.map((i) => Object.assign({}, i));
 
       await iota.setActiveSeed(BIP32_PATH, SECURITY);
       const actual = await iota.prepareTransfers(
