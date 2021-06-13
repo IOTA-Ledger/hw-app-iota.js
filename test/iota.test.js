@@ -10,7 +10,7 @@ const {
 } = require('@ledgerhq/hw-transport-mocker');
 const { createPrepareTransfers, generateAddress } = require('@iota/core');
 const { addChecksum } = require('@iota/checksum');
-const { ValidationError } = require('@hapi/joi');
+const { ValidationError } = require('joi');
 
 // test the transpiled library
 const Iota = require('../dist/iota.js');

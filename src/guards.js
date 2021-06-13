@@ -1,4 +1,4 @@
-import * as Joi from '@hapi/joi';
+import * as Joi from 'joi';
 
 const validInteger = Joi.number().integer();
 const validSecurity = validInteger.min(1).max(3); // low, medium or high
