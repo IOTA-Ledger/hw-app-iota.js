@@ -13,7 +13,7 @@ const { addChecksum } = require('@iota/checksum');
 const { ValidationError } = require('joi');
 
 // test the transpiled library
-const Iota = require('../dist/iota.js');
+const Iota = require('../dist/iota.cjs');
 
 const expect = chai.expect;
 chai.use(chaiAsPromised);

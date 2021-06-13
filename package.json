@@ -15,19 +15,20 @@
     "type": "git",
     "url": "git+https://github.com/IOTA-Ledger/hw-app-iota.js.git"
   },
+  "type": "module",
   "source": "src/iota.js",
-  "main": "dist/iota.js",
-  "module": "dist/iota.m.js",
-  "esmodule": "dist/iota.modern.js",
+  "exports": "./dist/iota.modern.js",
+  "main": "./dist/iota.cjs",
+  "module": "./dist/iota.module.js",
   "files": [
     "/dist",
     "/src"
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "build": "microbundle --format modern,es,cjs",
+    "build": "microbundle --format modern,esm,cjs",
     "dev": "microbundle watch",
-    "format": "prettier --single-quote --write src/**/*.js test/**/*.js",
+    "format": "prettier --single-quote --write src/**/*.js test/**/*.cjs",
     "lint": "eslint src",
     "pretest": "npm run build",
     "test": "mocha",
@@ -38,7 +39,7 @@
     "iota.lib.js": "^0.5.3",
     "joi": "^17.4.0",
     "semver": "^7.3.5",
-    "struct": "0.0.12"
+    "struct": "^0.0.12"
   },
   "devDependencies": {
     "@iota/checksum": "^1.0.0-beta.30",
