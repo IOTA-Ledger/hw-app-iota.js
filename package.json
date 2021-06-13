@@ -28,7 +28,7 @@
     "clean": "rimraf dist",
     "build": "microbundle --format modern,esm,cjs",
     "dev": "microbundle watch",
-    "format": "prettier --single-quote --write src/**/*.js test/**/*.cjs",
+    "format": "prettier --single-quote --write src/**/*.js test/**/*.js",
     "lint": "eslint src",
     "pretest": "npm run build",
     "test": "mocha",

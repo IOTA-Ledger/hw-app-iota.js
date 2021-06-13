@@ -1,22 +1,21 @@
-const fs = require('fs');
-const path = require('path');
+import { expect, use as chaiUse } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
+import fs from 'fs';
+import path from 'path';
 
-const {
+import Iota from 'hw-app-iota';
+import Joi from 'joi';
+
+import {
   RecordStore,
   createTransportReplayer,
-} = require('@ledgerhq/hw-transport-mocker');
-const { createPrepareTransfers, generateAddress } = require('@iota/core');
-const { addChecksum } = require('@iota/checksum');
-const { ValidationError } = require('joi');
+} from '@ledgerhq/hw-transport-mocker';
+import { createPrepareTransfers, generateAddress } from '@iota/core';
+import { addChecksum } from '@iota/checksum';
 
-// test the transpiled library
-const Iota = require('../dist/iota.cjs');
-
-const expect = chai.expect;
-chai.use(chaiAsPromised);
+// enable promises in Chai
+chaiUse(chaiAsPromised);
 
 const SECURITY = 2;
 const HASH_LENGTH = 81;
@@ -37,7 +36,8 @@ describe('Iota', function () {
   beforeEach(async function () {
     const recordingName = this.currentTest.fullTitle().replace(/[^\w]+/g, '_');
     const recordingFileName = path.join(
-      path.dirname(__filename),
+      path.resolve(),
+      'test',
       'recordings',
       recordingName + '.txt'
     );
@@ -59,7 +59,9 @@ describe('Iota', function () {
 
   describe('#setActiveSeed', function () {
     it('no path', async function () {
-      await expect(iota.setActiveSeed()).to.be.rejectedWith(ValidationError);
+      await expect(iota.setActiveSeed()).to.be.rejectedWith(
+        Joi.ValidationError
+      );
     });
 
     it('path too short', async function () {
@@ -196,7 +198,7 @@ describe('Iota', function () {
       await iota.setActiveSeed(BIP32_PATH, SECURITY);
       await expect(
         iota.prepareTransfers(transfers.outputs, [])
-      ).to.be.rejectedWith(ValidationError);
+      ).to.be.rejectedWith(Joi.ValidationError);
     });
 
     it('no output', async function () {
@@ -205,7 +207,7 @@ describe('Iota', function () {
       await iota.setActiveSeed(BIP32_PATH, SECURITY);
       await expect(
         iota.prepareTransfers([], transfers.inputs)
-      ).to.be.rejectedWith(ValidationError);
+      ).to.be.rejectedWith(Joi.ValidationError);
     });
 
     it('no remainder', async function () {

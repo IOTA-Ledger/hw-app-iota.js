@@ -1,12 +1,12 @@
 import Struct from 'struct';
-import Bundle from 'iota.lib.js/lib/crypto/bundle/bundle';
+import Bundle from 'iota.lib.js/lib/crypto/bundle/bundle.js';
 import {
   addChecksum,
   noChecksum,
   transactionTrytes,
-} from 'iota.lib.js/lib/utils/utils';
+} from 'iota.lib.js/lib/utils/utils.js';
 import bippath from 'bip32-path';
-import { satisfies } from 'semver';
+import semver from 'semver';
 import { getErrorMessage } from './error';
 import * as guards from './guards';
 
@@ -81,7 +81,7 @@ class Iota {
     // query the app config, if not present
     this.config = this.config ? this.config : await this._getAppConfig();
 
-    if (satisfies(this.config.app_version, LEGACY_VERSION_RANGE)) {
+    if (semver.satisfies(this.config.app_version, LEGACY_VERSION_RANGE)) {
       // use legacy structs
       this._createPubkeyInput = this._createPubkeyInputLegacy;
       this._createTxInput = this._createTxInputLegacy;
