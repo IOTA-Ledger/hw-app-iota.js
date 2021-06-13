@@ -1,6 +1,3 @@
-// @ledgerhq still requires polyfill, see github.com/LedgerHQ/ledgerjs/issues/332
-require('@babel/polyfill');
-
 const fs = require('fs');
 const path = require('path');
 
