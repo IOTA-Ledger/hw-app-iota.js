@@ -37,20 +37,20 @@
     "@hapi/joi": "^17.1.1",
     "bip32-path": "^0.4.2",
     "iota.lib.js": "^0.5.3",
-    "semver": "^7.3.2",
+    "semver": "^7.3.5",
     "struct": "0.0.12"
   },
   "devDependencies": {
-    "@babel/polyfill": "^7.11.5",
+    "@babel/polyfill": "^7.12.1",
     "@iota/checksum": "^1.0.0-beta.30",
     "@iota/core": "^1.0.0-beta.30",
-    "@ledgerhq/hw-transport-mocker": "^5.25.0",
-    "chai": "^4.2.0",
+    "@ledgerhq/hw-transport-mocker": "^5.51.1",
+    "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^7.10.0",
-    "microbundle": "^0.12.4",
-    "mocha": "^8.1.3",
-    "prettier": "^2.1.2",
+    "eslint": "^7.28.0",
+    "microbundle": "^0.13.3",
+    "mocha": "^9.0.0",
+    "prettier": "^2.3.1",
     "rimraf": "^3.0.2"
   }
 }
