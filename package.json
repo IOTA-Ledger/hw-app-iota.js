@@ -1,6 +1,6 @@
 {
   "name": "hw-app-iota",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Ledger Hardware Wallet IOTA Application API",
   "keywords": [
     "Ledger",
