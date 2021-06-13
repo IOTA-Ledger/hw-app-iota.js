@@ -41,7 +41,6 @@
     "struct": "0.0.12"
   },
   "devDependencies": {
-    "@babel/polyfill": "^7.11.5",
     "@iota/checksum": "^1.0.0-beta.30",
     "@iota/core": "^1.0.0-beta.30",
     "@ledgerhq/hw-transport-mocker": "^5.25.0",
