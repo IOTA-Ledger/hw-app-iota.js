@@ -161,6 +161,32 @@ class Iota {
   }
 
   /**
+   * Prepares the array of raw transaction data (trytes) by signing the inputs of the provided bundle.
+   * 
+   * @param {Bundle} bundle - Bundle to be signed
+   * @param {Object.<string, int>} addressKeyIndices - Indices of each input address
+   * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
+   */
+  async signBundle(bundle, addressKeyIndices) {
+    // assure that the bundle is really finalized
+    bundle.finalize()
+
+    const inputs = bundle.bundle.filter(tx => tx.value < 0)
+    inputs.forEach((tx) => {
+      if (!(tx.address in addressKeyIndices)) {
+        throw new Error('"addressKeyIndices" invalid: missing ' + tx.address)
+      }
+    })
+
+    await this._signBundle(bundle, addressKeyIndices);
+
+    // compute and return the corresponding trytes
+    const bundleTrytes = [];
+    bundle.bundle.forEach((tx) => bundleTrytes.push(transactionTrytes(tx)));
+    return bundleTrytes.reverse();
+  }
+
+  /**
    * Retrieves version information about the installed application from the device.
    *
    * @returns {Promise<String>} Semantic Version string (i.e. MAJOR.MINOR.PATCH)
