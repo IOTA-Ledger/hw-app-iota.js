@@ -169,6 +169,7 @@ class Iota {
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
   async signBundle(bundle, addressKeyIndices) {
+    this._assertInitialized();
     // assure that the bundle is really finalized
     bundle.finalize()
 
