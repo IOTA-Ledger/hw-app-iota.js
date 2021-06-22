@@ -28,12 +28,14 @@ const validInputs = Joi.array()
       address: validAddress.required(),
       balance: validBalance.required(),
       keyIndex: validIndex.required(),
+      tags: Joi.array().items(validTag).optional(),
     }).unknown()
   )
   .min(1);
 const validRemainder = Joi.object({
   address: validAddress.required(),
   keyIndex: validIndex.required(),
+  tag: validTag.optional(),
 }).unknown();
 
 export function string(value) {
@@ -58,6 +60,10 @@ export function inputs(value) {
 
 export function remainder(value) {
   Joi.assert(value, validRemainder.optional());
+}
+
+export function trytes(value) {
+  Joi.assert(value, validTrytes.required());
 }
 
 export function nullaryFunc(value) {
