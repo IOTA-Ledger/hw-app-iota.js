@@ -185,6 +185,10 @@ class Iota {
     // compute and return the corresponding trytes
     const bundleTrytes = [];
     bundle.bundle.forEach((tx) => bundleTrytes.push(transactionTrytes(tx)));
+    
+    // reset the bundle
+    await this._reset(true);
+    
     return bundleTrytes.reverse();
   }
 
