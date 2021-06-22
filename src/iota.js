@@ -51,6 +51,7 @@ class Iota {
         'setActiveSeed',
         'getAddress',
         'prepareTransfers',
+        'signBundle',
         'getAppVersion',
         'getAppMaxBundleSize',
       ],
