@@ -70,12 +70,12 @@ Class for the interaction with the Ledger IOTA application.
 <a name="module_hw-app-iota..Iota+setActiveSeed"></a>
 
 #### iota.setActiveSeed(path, [security])
-Prepares the IOTA seed to be used for subsequent calls. 
+Prepares the IOTA seed to be used for subsequent calls.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | path | <code>String</code> |  | String representation of the BIP32 path. At most 5 levels. |
-| [security] | <code>Number</code> | <code>2</code> | IOTA security level to use |
+| [security] | <code>Integer</code> | <code>2</code> | IOTA security level to use |
 
 **Example**  
 ```js
@@ -117,9 +117,11 @@ Prepares the array of raw transaction data (trytes) by generating a bundle and s
 | inputs[].address | <code>String</code> |  | Tryte-encoded source address, with or without the 9 tryte checksum |
 | inputs[].balance | <code>Integer</code> |  | Balance of that input |
 | inputs[].keyIndex | <code>String</code> |  | Index of the address |
+| [inputs[].tags] | <code>Array.&lt;String&gt;</code> |  | Tryte-encoded tags, one for each security level. |
 | [remainder] | <code>Object</code> |  | Destination for sending the remainder value (of the inputs) to. |
 | remainder.address | <code>String</code> |  | Tryte-encoded address, with or without the 9 tryte checksum |
 | remainder.keyIndex | <code>Integer</code> |  | Index of the address |
+| [remainder.tag] | <code>String</code> |  | Tryte-encoded tag. Maximum value is 27 trytes. |
 | [now] | <code>function</code> | <code>Date.now()</code> | Function to get the milliseconds since the UNIX epoch for timestamps. |
 
 <a name="module_hw-app-iota..Iota+getAppVersion"></a>
@@ -134,4 +136,4 @@ Retrieves version information about the installed application from the device.
 Retrieves the largest supported number of transactions (including meta transactions)
 in one transfer bundle from the device.
 
-**Returns**: <code>Promise.&lt;Integer&gt;</code> - Maximum bundle size  
+**Returns**: <code>Promise.&lt;Integer&gt;</code> - Maximum bundle size

@@ -130,9 +130,11 @@ class Iota {
    * @param {String} inputs[].address - Tryte-encoded source address, with or without the 9 tryte checksum
    * @param {Integer} inputs[].balance - Balance of that input
    * @param {String} inputs[].keyIndex - Index of the address
+   * @param {String[]} [inputs[].tags] - Tryte-encoded tags, one for each security level.
    * @param {Object} [remainder] - Destination for sending the remainder value (of the inputs) to.
    * @param {String} remainder.address - Tryte-encoded address, with or without the 9 tryte checksum
    * @param {Integer} remainder.keyIndex - Index of the address
+   * @param {String} [remainder.tag] - Tryte-encoded tag. Maximum value is 27 trytes.
    * @param {Function} [now = Date.now()] - Function to get the milliseconds since the UNIX epoch for timestamps.
    * @returns {Promise<String[]>} Transaction trytes of 2673 trytes per transaction
    */
@@ -522,12 +524,18 @@ class Iota {
       ...i,
       // remove checksum
       address: noChecksum(i.address),
-      // set correct security level
-      security: this.security,
+      // pad tags
+      tags: i.tags ? i.tags.map((tag) => tag.padEnd(TAG_LENGTH, '9')) : null,
     }));
     if (remainder) {
       // remove checksum
-      remainder = { ...remainder, address: noChecksum(remainder.address) };
+      remainder = {
+        ...remainder,
+        // remove checksum
+        address: noChecksum(remainder.address),
+        // pad tag
+        tag: remainder.tag ? remainder.tag.padEnd(TAG_LENGTH, '9') : EMPTY_TAG,
+      };
     }
 
     if (this._hasDuplicateAddresses(transfers, inputs, remainder)) {
@@ -538,25 +546,27 @@ class Iota {
     const timestamp = Math.floor(now() / 1000);
     let bundle = new Bundle();
 
-    transfers.forEach((t) =>
-      bundle.addEntry(1, t.address, t.value, t.tag, timestamp, -1)
+    transfers.forEach((x) =>
+      bundle.addEntry(1, x.address, x.value, x.tag, timestamp, -1)
     );
-    inputs.forEach((i) =>
-      bundle.addEntry(
-        i.security,
-        i.address,
-        -i.balance,
-        EMPTY_TAG,
-        timestamp,
-        i.keyIndex
-      )
-    );
+    inputs.forEach((x) => {
+      for (let i = 0; i < this.security; i++) {
+        bundle.addEntry(
+          1,
+          x.address,
+          i == 0 ? -x.balance : 0,
+          x.tags ? x.tags[i] : EMPTY_TAG,
+          timestamp,
+          x.keyIndex
+        );
+      }
+    });
     if (remainder) {
       bundle.addEntry(
         1,
         remainder.address,
         remainder.value,
-        EMPTY_TAG,
+        remainder.tag,
         timestamp,
         remainder.keyIndex
       );

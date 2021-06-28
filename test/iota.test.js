@@ -277,5 +277,26 @@ describe('Iota', function () {
       expect(transfers.outputs).to.deep.equal(outputsClone);
       expect(transfers.inputs).to.deep.equal(inputsClone);
     });
+
+    it('with tags', async function () {
+      const expected = await prepareTransfers(seed, transfers.outputs, {
+        inputs: transfers.inputs,
+        remainderAddress: transfers.remainder.address,
+        SECURITY,
+      });
+
+      const inputs = transfers.inputs.map((i) => ({ ...i, tags: ['', ''] }));
+      const remainder = { ...transfers.remainder, tag: '' };
+
+      await iota.setActiveSeed(BIP32_PATH, SECURITY);
+      const actual = await iota.prepareTransfers(
+        transfers.outputs,
+        inputs,
+        remainder,
+        NOW
+      );
+
+      expect(actual).to.deep.equal(expected);
+    });
   });
 });
