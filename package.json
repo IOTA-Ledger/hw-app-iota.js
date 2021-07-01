@@ -44,7 +44,7 @@
   "devDependencies": {
     "@iota/checksum": "^1.0.0-beta.30",
     "@iota/core": "^1.0.0-beta.30",
-    "@ledgerhq/hw-transport-mocker": "^5.51.1",
+    "@ledgerhq/hw-transport-mocker": "^6.0.2",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "eslint": "^7.28.0",
