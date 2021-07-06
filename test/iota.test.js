@@ -9,7 +9,7 @@ import Joi from 'joi';
 
 import {
   RecordStore,
-  createTransportReplayer,
+  openTransportReplayer,
 } from '@ledgerhq/hw-transport-mocker';
 import { createPrepareTransfers, generateAddress } from '@iota/core';
 import { addChecksum } from '@iota/checksum';
@@ -47,9 +47,7 @@ describe('Iota', function () {
       ? fs.readFileSync(recordingFileName, 'utf-8')
       : '';
     const recordStore = RecordStore.fromString(recording);
-    const Transport = createTransportReplayer(recordStore);
-
-    transport = await Transport.open();
+    transport = await openTransportReplayer(recordStore);
     iota = new Iota(transport);
   });
 
