@@ -34,7 +34,11 @@
     "bech32": "^1.1.4",
     "bip32-path": "^0.4.2",
     "joi": "^17.4.0",
-    "struct": "0.0.12"
+    "struct": "0.0.12",
+    "@ledgerhq/hw-transport": "^6.27.6",
+    "@ledgerhq/logs": "^6.10.1",
+    "@ledgerhq/types-cryptoassets":"^6.23.2"
+
   },
   "devDependencies": {
     "eslint": "^7.19.0",
