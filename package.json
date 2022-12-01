@@ -47,7 +47,7 @@
     "@ledgerhq/hw-transport-mocker": "^6.0.2",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^7.30.0",
+    "eslint": "^8.28.0",
     "microbundle": "^0.13.3",
     "mocha": "^9.0.2",
     "prettier": "^2.3.2",
